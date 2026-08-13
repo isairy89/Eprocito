@@ -449,11 +449,12 @@ export class ExportService {
 
     // Hoja 1: Resumen de Inventario
     const dataResumen = [
-      { Concepto: 'Existencia Inicial', Galones: resumen.existenciaInicialGalones, 'Monto RD$': '-' },
-      { Concepto: 'Total Comprado', Galones: resumen.totalCompradoGalones, 'Monto RD$': resumen.totalMontoCompras },
-      { Concepto: 'Total Despachado', Galones: resumen.totalDespachadoGalones, 'Monto RD$': '-' },
-      { Concepto: 'Ajuste Acumulado Conteo Físico', Galones: resumen.totalAjustesDiferenciaGalones, 'Monto RD$': '-' },
-      { Concepto: 'SALDO DISPONIBLE ACTUAL', Galones: resumen.saldoDisponibleGalones, 'Monto RD$': '-' }
+      { Concepto: 'Existencia Inicial (Teórica)', Galones: resumen.existenciaInicialGalones, 'Monto RD$': '-' },
+      { Concepto: 'Total Comprado (+)', Galones: resumen.totalCompradoGalones, 'Monto RD$': resumen.totalMontoCompras },
+      { Concepto: 'Total Despachado (-)', Galones: resumen.totalDespachadoGalones, 'Monto RD$': '-' },
+      { Concepto: 'SALDO TEÓRICO CALCULADO', Galones: resumen.saldoTeoricoGalones, 'Monto RD$': '-' },
+      { Concepto: 'ÚLTIMA EXISTENCIA FÍSICA (MEDIDA)', Galones: resumen.ultimoConteoFisicoGalones ?? 'Sin medición', 'Monto RD$': '-' },
+      { Concepto: 'DIFERENCIA DE AUDITORÍA (FÍSICO vs TEÓRICO)', Galones: resumen.ultimaDiferenciaGalones ?? 0, 'Monto RD$': '-' }
     ];
     const wsResumen = XLSX.utils.json_to_sheet(dataResumen);
     XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen Inventario');
@@ -542,12 +543,12 @@ export class ExportService {
     );
 
     // Resumen de cajas pequeñas
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Existencia Inicial: ${resumen.existenciaInicialGalones} gal`, 14, 29);
-    doc.text(`+ Comprado: ${resumen.totalCompradoGalones} gal ($${resumen.totalMontoCompras.toLocaleString('es-DO')})`, 75, 29);
-    doc.text(`- Despachado: ${resumen.totalDespachadoGalones} gal`, 150, 29);
-    doc.text(`= SALDO DISPONIBLE: ${resumen.saldoDisponibleGalones} gal`, 215, 29);
+    doc.text(`Inicial: ${resumen.existenciaInicialGalones} gal | +Comprado: ${resumen.totalCompradoGalones} gal ($${resumen.totalMontoCompras.toLocaleString('es-DO')}) | -Despachado: ${resumen.totalDespachadoGalones} gal`, 14, 28);
+    const fisicoTxt = resumen.ultimoConteoFisicoGalones !== undefined ? `${resumen.ultimoConteoFisicoGalones} gal` : 'Sin registro';
+    const difTxt = resumen.ultimaDiferenciaGalones !== undefined ? `${resumen.ultimaDiferenciaGalones > 0 ? '+' : ''}${resumen.ultimaDiferenciaGalones} gal` : '0 gal';
+    doc.text(`SALDO TEÓRICO: ${resumen.saldoTeoricoGalones} gal  |  EXISTENCIA FÍSICA: ${fisicoTxt}  |  DIFERENCIA AUDITORÍA: ${difTxt}`, 14, 33);
 
     // Tabla 1: Despachos
     doc.setFontSize(10);

@@ -14,7 +14,11 @@ export interface ResumenGasoil {
   totalMontoCompras: number;
   totalDespachadoGalones: number;
   totalAjustesDiferenciaGalones: number;
+  saldoTeoricoGalones: number;
   saldoDisponibleGalones: number;
+  ultimoConteoFisicoGalones?: number;
+  ultimaDiferenciaGalones?: number;
+  fechaUltimoConteo?: string;
 }
 
 export interface MovimientoHistorialGasoil {
@@ -38,7 +42,9 @@ export interface MovimientoHistorialGasoil {
 
 export class GasoilService {
   /**
-   * Calcula el resumen cuantitativo del inventario de gasoil
+   * Calcula el resumen cuantitativo del inventario de gasoil.
+   * Saldo teórico = Existencia inicial + compras - despachos.
+   * Un conteo físico NO modifica automáticamente el saldo teórico.
    */
   static calcularResumen(
     config: ConfiguracionGasoil,
@@ -52,17 +58,18 @@ export class GasoilService {
     const totalMontoCompras = compras.reduce((acc, c) => acc + (Number(c.montoTotal) || 0), 0);
     const totalDespachadoGalones = despachos.reduce((acc, d) => acc + (Number(d.galones) || 0), 0);
 
-    // Suma de diferencias acumuladas en conteos físicos
+    // Suma de diferencias acumuladas en conteos físicos (para auditoría)
     const totalAjustesDiferenciaGalones = conteos.reduce(
       (acc, c) => acc + (Number(c.diferenciaGalones) || 0),
       0
     );
 
-    const saldoDisponibleGalones =
-      existenciaInicialGalones +
-      totalCompradoGalones -
-      totalDespachadoGalones +
-      totalAjustesDiferenciaGalones;
+    // Saldo Teórico: estrictamente Inicial + Compras - Despachos
+    const saldoTeoricoGalones = existenciaInicialGalones + totalCompradoGalones - totalDespachadoGalones;
+
+    // Conteo Físico más reciente
+    const conteosOrdenados = [...conteos].sort((a, b) => b.fecha.localeCompare(a.fecha));
+    const ultimoConteo = conteosOrdenados[0];
 
     return {
       existenciaInicialGalones,
@@ -70,12 +77,17 @@ export class GasoilService {
       totalMontoCompras,
       totalDespachadoGalones,
       totalAjustesDiferenciaGalones,
-      saldoDisponibleGalones
+      saldoTeoricoGalones,
+      saldoDisponibleGalones: saldoTeoricoGalones,
+      ultimoConteoFisicoGalones: ultimoConteo ? ultimoConteo.existenciaFisicaGalones : undefined,
+      ultimaDiferenciaGalones: ultimoConteo ? ultimoConteo.diferenciaGalones : undefined,
+      fechaUltimoConteo: ultimoConteo ? ultimoConteo.fecha : undefined
     };
   }
 
   /**
-   * Genera el libro de movimientos cronológicos acumulados con saldo resultante
+   * Genera el libro de movimientos cronológicos acumulados con saldo resultante.
+   * El saldo acumulado (teórico) solo cambia por entradas y salidas, no por conteos físicos.
    */
   static obtenerHistorialMovimientos(
     config: ConfiguracionGasoil,
@@ -137,12 +149,12 @@ export class GasoilService {
         entradaGalones: 0,
         salidaGalones: Number(d.galones) || 0,
         ajusteGalones: 0,
-        responsableOAutorizado: `Auth: ${d.autorizadoPor} / Entregó: ${d.entregadoPor}`,
+        responsableOAutorizado: `Auth: ${d.autorizadoPor || 'N/A'} / Entregó: ${d.entregadoPor || 'N/A'}`,
         observaciones: d.observaciones
       });
     });
 
-    // Conteos Físicos (Ajustes)
+    // Conteos Físicos (Medición de Auditoría)
     conteos.forEach((c) => {
       movimientos.push({
         id: c.id,
@@ -170,7 +182,8 @@ export class GasoilService {
     let saldoAcumulado = config.existenciaInicialGalones || 0;
 
     return movimientos.map((m) => {
-      saldoAcumulado = saldoAcumulado + m.entradaGalones - m.salidaGalones + m.ajusteGalones;
+      // El saldo teórico acumulado solo varía con entradas y salidas de combustible
+      saldoAcumulado = saldoAcumulado + m.entradaGalones - m.salidaGalones;
       return {
         ...m,
         saldoResultanteGalones: Math.round(saldoAcumulado * 100) / 100

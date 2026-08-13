@@ -102,13 +102,13 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
   // Form State Despacho
   const [formDespacho, setFormDespacho] = useState<Partial<DespachoGasoil>>({
     fecha: new Date().toISOString().split('T')[0],
-    hora: '08:00',
+    hora: new Date().toTimeString().slice(0, 5),
     equipoOVehiculo: '',
     placa: '',
     operadorOChofer: '',
-    galones: 20,
-    autorizadoPor: 'Lidia Rosario',
-    entregadoPor: 'Miguel Torres',
+    galones: '' as any,
+    autorizadoPor: '',
+    entregadoPor: '',
     horometro: undefined,
     kilometraje: undefined,
     conduceId: '',
@@ -123,22 +123,22 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
     proveedor: '',
     facturaODocumento: '',
     numeroReferencia: '',
-    galones: 500,
-    precioPorGalon: 210,
+    galones: '' as any,
+    precioPorGalon: '' as any,
     observaciones: ''
   });
 
   // Form State Conteo
   const [formConteo, setFormConteo] = useState<{
     fecha: string;
-    existenciaFisicaGalones: number;
+    existenciaFisicaGalones: number | string;
     responsable: string;
     observaciones: string;
   }>({
     fecha: new Date().toISOString().split('T')[0],
-    existenciaFisicaGalones: 1000,
-    responsable: 'Miguel Torres',
-    observaciones: 'Conteo físico periódico de tanque en patio'
+    existenciaFisicaGalones: '',
+    responsable: '',
+    observaciones: ''
   });
 
   // Cálculo de Resumen e Inconsistencias en tiempo real
@@ -218,12 +218,12 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
     setFormDespacho({
       fecha: new Date().toISOString().split('T')[0],
       hora: new Date().toTimeString().slice(0, 5),
-      equipoOVehiculo: listaEquiposSugeridos[0] || 'Camión Mack 14m³',
-      placa: listaPlacasSugeridas[0] || 'L-394810',
-      operadorOChofer: listaOperadoresSugeridos[0] || 'Carlos Manuel Rodríguez',
-      galones: 20,
-      autorizadoPor: 'Lidia Rosario',
-      entregadoPor: 'Miguel Torres',
+      equipoOVehiculo: '',
+      placa: '',
+      operadorOChofer: '',
+      galones: '' as any,
+      autorizadoPor: '',
+      entregadoPor: '',
       horometro: undefined,
       kilometraje: undefined,
       conduceId: '',
@@ -251,12 +251,12 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
       id: despachoEditando ? despachoEditando.id : `desp-${Date.now()}`,
       fecha: formDespacho.fecha || new Date().toISOString().split('T')[0],
       hora: formDespacho.hora || '08:00',
-      equipoOVehiculo: formDespacho.equipoOVehiculo || 'Equipo General',
+      equipoOVehiculo: formDespacho.equipoOVehiculo || '',
       placa: formDespacho.placa || '',
       operadorOChofer: formDespacho.operadorOChofer || '',
       galones: Number(formDespacho.galones) || 0,
-      autorizadoPor: formDespacho.autorizadoPor || 'Administración',
-      entregadoPor: formDespacho.entregadoPor || 'Despachador Patio',
+      autorizadoPor: formDespacho.autorizadoPor || '',
+      entregadoPor: formDespacho.entregadoPor || '',
       horometro: formDespacho.horometro ? Number(formDespacho.horometro) : undefined,
       kilometraje: formDespacho.kilometraje ? Number(formDespacho.kilometraje) : undefined,
       conduceId: formDespacho.conduceId || undefined,
@@ -275,11 +275,11 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
     setCompraEditando(null);
     setFormCompra({
       fecha: new Date().toISOString().split('T')[0],
-      proveedor: 'Refidomsa',
-      facturaODocumento: 'FAC-' + Math.floor(1000 + Math.random() * 9000),
-      numeroReferencia: 'REF-' + Math.floor(100 + Math.random() * 900),
-      galones: 500,
-      precioPorGalon: 210,
+      proveedor: '',
+      facturaODocumento: '',
+      numeroReferencia: '',
+      galones: '' as any,
+      precioPorGalon: '' as any,
       observaciones: ''
     });
     setModalCompraAbierto(true);
@@ -304,7 +304,7 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
     const compraFinal: CompraGasoil = {
       id: compraEditando ? compraEditando.id : `comp-${Date.now()}`,
       fecha: formCompra.fecha || new Date().toISOString().split('T')[0],
-      proveedor: formCompra.proveedor || 'Proveedor Desconocido',
+      proveedor: formCompra.proveedor || '',
       facturaODocumento: formCompra.facturaODocumento || '',
       numeroReferencia: formCompra.numeroReferencia || '',
       galones,
@@ -322,16 +322,16 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
   const handleAbrirNuevoConteo = () => {
     setFormConteo({
       fecha: new Date().toISOString().split('T')[0],
-      existenciaFisicaGalones: resumen.saldoDisponibleGalones,
-      responsable: 'Miguel Torres',
-      observaciones: 'Conteo físico periódico de tanque'
+      existenciaFisicaGalones: '',
+      responsable: '',
+      observaciones: ''
     });
     setModalConteoAbierto(true);
   };
 
   const handleGuardarConteoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const teorica = resumen.saldoDisponibleGalones;
+    const teorica = resumen.saldoTeoricoGalones;
     const fisica = Number(formConteo.existenciaFisicaGalones) || 0;
     const diferencia = fisica - teorica;
 
@@ -341,7 +341,7 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
       existenciaTeoricaGalones: teorica,
       existenciaFisicaGalones: fisica,
       diferenciaGalones: diferencia,
-      responsable: formConteo.responsable || 'Encargado de Patio',
+      responsable: formConteo.responsable || '',
       observaciones: formConteo.observaciones || '',
       creadoEn: new Date().toISOString()
     };
@@ -421,11 +421,11 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
         </div>
 
         {/* Cajas Metricas de Resumen */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-6">
-          {/* Tarjeta 1: Saldo Disponible */}
-          <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mt-6">
+          {/* Tarjeta 1: Saldo Teórico */}
+          <div className="bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-medium">Existencia Disponible</span>
+              <span className="text-[11px] text-slate-400 font-semibold">Saldo Teórico (Sistema)</span>
               <button
                 onClick={() => {
                   setTempExistenciaInicial(configGasoil.existenciaInicialGalones || 1000);
@@ -434,110 +434,127 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
                 className="text-[10px] text-amber-400 hover:underline cursor-pointer"
                 title="Ajustar existencia inicial teórica"
               >
-                Ajustar Inicial
+                Inicial
               </button>
             </div>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-black text-amber-400">
-                {resumen.saldoDisponibleGalones.toLocaleString('es-DO')}{' '}
+            <div className="mt-1.5 flex items-baseline justify-between">
+              <span className="text-xl font-black text-amber-400">
+                {resumen.saldoTeoricoGalones.toLocaleString('es-DO')}{' '}
                 <span className="text-xs font-normal text-slate-400">gal</span>
               </span>
               <span
-                className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
-                  resumen.saldoDisponibleGalones > 200
+                className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${
+                  resumen.saldoTeoricoGalones > 200
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                     : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                 }`}
               >
-                {resumen.saldoDisponibleGalones > 200 ? 'Suficiente' : 'Stock Bajo'}
+                {resumen.saldoTeoricoGalones > 200 ? 'Suficiente' : 'Bajo'}
               </span>
             </div>
-            <span className="text-[10px] text-slate-500 mt-1">
-              Base inicial: {resumen.existenciaInicialGalones.toLocaleString('es-DO')} gal
+            <span className="text-[10px] text-slate-500 mt-1 truncate">
+              Inicial + Compras - Despachos
             </span>
           </div>
 
-          {/* Tarjeta 2: Total Compras */}
-          <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
-            <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
+          {/* Tarjeta 2: Conteo Físico Real */}
+          <div className="bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl flex flex-col justify-between">
+            <span className="text-[11px] text-slate-400 font-semibold flex items-center gap-1.5">
+              <Scale className="w-3.5 h-3.5 text-sky-400" /> Existencia Física
+            </span>
+            <div className="mt-1.5">
+              <span className="text-xl font-black text-sky-400">
+                {resumen.ultimoConteoFisicoGalones !== undefined
+                  ? `${resumen.ultimoConteoFisicoGalones.toLocaleString('es-DO')} gal`
+                  : 'Sin medir'}
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-500 mt-1 truncate">
+              {resumen.fechaUltimoConteo ? `Conteo del ${resumen.fechaUltimoConteo}` : 'Sin conteos registrados'}
+            </span>
+          </div>
+
+          {/* Tarjeta 3: Diferencia Auditoría */}
+          <div className="bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl flex flex-col justify-between">
+            <span className="text-[11px] text-slate-400 font-semibold flex items-center gap-1.5">
+              <Scale className="w-3.5 h-3.5 text-slate-400" /> Diferencia Físico
+            </span>
+            <div className="mt-1.5">
+              <span
+                className={`text-xl font-black ${
+                  resumen.ultimaDiferenciaGalones !== undefined && resumen.ultimaDiferenciaGalones < 0
+                    ? 'text-rose-400'
+                    : resumen.ultimaDiferenciaGalones !== undefined && resumen.ultimaDiferenciaGalones > 0
+                    ? 'text-emerald-400'
+                    : 'text-slate-300'
+                }`}
+              >
+                {resumen.ultimaDiferenciaGalones !== undefined
+                  ? `${resumen.ultimaDiferenciaGalones > 0 ? '+' : ''}${resumen.ultimaDiferenciaGalones.toLocaleString('es-DO')} gal`
+                  : '0 gal'}
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-500 mt-1 truncate">
+              Físico vs Teórico (Auditoría)
+            </span>
+          </div>
+
+          {/* Tarjeta 4: Total Compras */}
+          <div className="bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl flex flex-col justify-between">
+            <span className="text-[11px] text-slate-400 font-semibold flex items-center gap-1.5">
               <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> Total Compras
             </span>
-            <div className="mt-2">
-              <span className="text-2xl font-black text-emerald-400">
+            <div className="mt-1.5">
+              <span className="text-xl font-black text-emerald-400">
                 +{resumen.totalCompradoGalones.toLocaleString('es-DO')}{' '}
                 <span className="text-xs font-normal text-slate-400">gal</span>
               </span>
             </div>
-            <span className="text-[10px] text-slate-500 mt-1">
-              RD$ {resumen.totalMontoCompras.toLocaleString('es-DO')} invertidos
+            <span className="text-[10px] text-slate-500 mt-1 truncate">
+              RD$ {resumen.totalMontoCompras.toLocaleString('es-DO')}
             </span>
           </div>
 
-          {/* Tarjeta 3: Total Despachado */}
-          <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
-            <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
-              <TrendingDown className="w-3.5 h-3.5 text-rose-400" /> Total Despachado
+          {/* Tarjeta 5: Total Despachado */}
+          <div className="bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl flex flex-col justify-between">
+            <span className="text-[11px] text-slate-400 font-semibold flex items-center gap-1.5">
+              <TrendingDown className="w-3.5 h-3.5 text-rose-400" /> Despachado
             </span>
-            <div className="mt-2">
-              <span className="text-2xl font-black text-rose-400">
+            <div className="mt-1.5">
+              <span className="text-xl font-black text-rose-400">
                 -{resumen.totalDespachadoGalones.toLocaleString('es-DO')}{' '}
                 <span className="text-xs font-normal text-slate-400">gal</span>
               </span>
             </div>
-            <span className="text-[10px] text-slate-500 mt-1">
-              {despachosGasoil.length} entregas a equipos registrados
+            <span className="text-[10px] text-slate-500 mt-1 truncate">
+              {despachosGasoil.length} entregas
             </span>
           </div>
 
-          {/* Tarjeta 4: Inconsistencias a Revisar */}
+          {/* Tarjeta 6: Inconsistencias a Revisar */}
           <div
             onClick={() => setSubTab('alertas')}
-            className={`bg-slate-950/80 border p-4 rounded-xl flex flex-col justify-between cursor-pointer transition-all ${
+            className={`bg-slate-950/80 border p-3.5 rounded-xl flex flex-col justify-between cursor-pointer transition-all ${
               alertasInconsistencias.length > 0
                 ? 'border-amber-500/50 hover:bg-amber-950/30'
                 : 'border-slate-800'
             }`}
           >
-            <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
+            <span className="text-[11px] text-slate-400 font-semibold flex items-center gap-1.5">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> Para Revisar
             </span>
-            <div className="mt-2 flex items-baseline justify-between">
+            <div className="mt-1.5 flex items-baseline justify-between">
               <span
-                className={`text-2xl font-black ${
+                className={`text-xl font-black ${
                   alertasInconsistencias.length > 0 ? 'text-amber-400' : 'text-slate-300'
                 }`}
               >
                 {alertasInconsistencias.length}
               </span>
-              <span className="text-[10px] text-amber-400/80 font-semibold underline">Ver Alertas</span>
+              <span className="text-[9px] text-amber-400/80 font-semibold underline">Ver Alertas</span>
             </div>
-            <span className="text-[10px] text-slate-500 mt-1">
-              Detección de movimientos inusuales
-            </span>
-          </div>
-
-          {/* Tarjeta 5: Ajuste Conteo Físico */}
-          <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
-            <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
-              <Scale className="w-3.5 h-3.5 text-sky-400" /> Ajuste Físico Tanque
-            </span>
-            <div className="mt-2">
-              <span
-                className={`text-2xl font-black ${
-                  resumen.totalAjustesDiferenciaGalones < 0
-                    ? 'text-rose-400'
-                    : resumen.totalAjustesDiferenciaGalones > 0
-                    ? 'text-emerald-400'
-                    : 'text-slate-300'
-                }`}
-              >
-                {resumen.totalAjustesDiferenciaGalones > 0 ? '+' : ''}
-                {resumen.totalAjustesDiferenciaGalones.toLocaleString('es-DO')}{' '}
-                <span className="text-xs font-normal text-slate-400">gal</span>
-              </span>
-            </div>
-            <span className="text-[10px] text-slate-500 mt-1">
-              {conteosGasoil.length} mediciones físicas en patio
+            <span className="text-[10px] text-slate-500 mt-1 truncate">
+              Inconsistencias
             </span>
           </div>
         </div>
@@ -1196,12 +1213,12 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
             </h3>
 
             {/* Advertencia de Existencia Insuficiente */}
-            {Number(formDespacho.galones || 0) > resumen.saldoDisponibleGalones && (
+            {Number(formDespacho.galones || 0) > resumen.saldoTeoricoGalones && (
               <div className="bg-rose-950/80 border border-rose-500/80 p-3 rounded-xl text-rose-100 text-xs flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
                 <div>
                   <strong>Existencia Insuficiente:</strong> La cantidad a despachar (
-                  {formDespacho.galones} gal) supera el disponible actual ({resumen.saldoDisponibleGalones}{' '}
+                  {formDespacho.galones} gal) supera el saldo teórico disponible ({resumen.saldoTeoricoGalones}{' '}
                   gal). El saldo quedará en negativo si procede sin compra.
                 </div>
               </div>
@@ -1289,8 +1306,14 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
                     step="0.1"
                     min="1"
                     required
-                    value={formDespacho.galones}
-                    onChange={(e) => setFormDespacho({ ...formDespacho, galones: Number(e.target.value) })}
+                    placeholder="0"
+                    value={formDespacho.galones ?? ''}
+                    onChange={(e) =>
+                      setFormDespacho({
+                        ...formDespacho,
+                        galones: e.target.value === '' ? ('' as any) : Number(e.target.value)
+                      })
+                    }
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-amber-400 font-extrabold text-sm outline-none focus:border-amber-500"
                   />
                 </div>
@@ -1478,8 +1501,14 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
                     type="number"
                     min="1"
                     required
-                    value={formCompra.galones}
-                    onChange={(e) => setFormCompra({ ...formCompra, galones: Number(e.target.value) })}
+                    placeholder="0"
+                    value={formCompra.galones ?? ''}
+                    onChange={(e) =>
+                      setFormCompra({
+                        ...formCompra,
+                        galones: e.target.value === '' ? ('' as any) : Number(e.target.value)
+                      })
+                    }
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 font-black text-sm outline-none"
                   />
                 </div>
@@ -1488,8 +1517,14 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
                   <input
                     type="number"
                     step="0.01"
-                    value={formCompra.precioPorGalon}
-                    onChange={(e) => setFormCompra({ ...formCompra, precioPorGalon: Number(e.target.value) })}
+                    placeholder="0.00"
+                    value={formCompra.precioPorGalon ?? ''}
+                    onChange={(e) =>
+                      setFormCompra({
+                        ...formCompra,
+                        precioPorGalon: e.target.value === '' ? ('' as any) : Number(e.target.value)
+                      })
+                    }
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none"
                   />
                 </div>
@@ -1567,7 +1602,7 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
                 <div className="flex justify-between items-center text-slate-400">
                   <span>Existencia Teórica Calculada:</span>
                   <span className="font-bold text-slate-200">
-                    {resumen.saldoDisponibleGalones.toLocaleString('es-DO')} gal
+                    {resumen.saldoTeoricoGalones.toLocaleString('es-DO')} gal
                   </span>
                 </div>
               </div>
@@ -1578,29 +1613,33 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
                 </label>
                 <input
                   type="number"
-                  step="1"
+                  step="0.1"
                   required
-                  value={formConteo.existenciaFisicaGalones}
+                  placeholder="0"
+                  value={formConteo.existenciaFisicaGalones ?? ''}
                   onChange={(e) =>
-                    setFormConteo({ ...formConteo, existenciaFisicaGalones: Number(e.target.value) })
+                    setFormConteo({
+                      ...formConteo,
+                      existenciaFisicaGalones: e.target.value === '' ? '' : Number(e.target.value)
+                    })
                   }
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sky-400 font-black text-sm outline-none"
                 />
               </div>
 
               <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400 font-medium">Diferencia Calculada:</span>
+                <span className="text-slate-400 font-medium">Diferencia Calculada (Físico vs Teórico):</span>
                 <span
                   className={`text-base font-extrabold ${
-                    formConteo.existenciaFisicaGalones - resumen.saldoDisponibleGalones < 0
+                    Number(formConteo.existenciaFisicaGalones || 0) - resumen.saldoTeoricoGalones < 0
                       ? 'text-rose-400'
-                      : formConteo.existenciaFisicaGalones - resumen.saldoDisponibleGalones > 0
+                      : Number(formConteo.existenciaFisicaGalones || 0) - resumen.saldoTeoricoGalones > 0
                       ? 'text-emerald-400'
                       : 'text-slate-300'
                   }`}
                 >
-                  {formConteo.existenciaFisicaGalones - resumen.saldoDisponibleGalones > 0 ? '+' : ''}
-                  {formConteo.existenciaFisicaGalones - resumen.saldoDisponibleGalones} gal
+                  {Number(formConteo.existenciaFisicaGalones || 0) - resumen.saldoTeoricoGalones > 0 ? '+' : ''}
+                  {(Number(formConteo.existenciaFisicaGalones || 0) - resumen.saldoTeoricoGalones).toLocaleString('es-DO')} gal
                 </span>
               </div>
 
