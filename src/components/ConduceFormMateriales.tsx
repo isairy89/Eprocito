@@ -172,6 +172,10 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
       setErrorMsg('Debe ingresar la Placa del camión.');
       return;
     }
+    if (capacidadCamionM3 <= 0) {
+      setErrorMsg('La capacidad del camión debe ser mayor a 0 m³.');
+      return;
+    }
     if (!choferNombre.trim()) {
       setErrorMsg('Debe especificar el Chofer del camión.');
       return;
@@ -409,6 +413,7 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
                       >
                         <option value="metro">Por Metro (m³)</option>
                         <option value="viaje">Por Viaje</option>
+                        <option value="hora">Por Hora</option>
                       </select>
                     </td>
 

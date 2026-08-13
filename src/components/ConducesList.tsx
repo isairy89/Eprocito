@@ -234,7 +234,7 @@ export const ConducesList: React.FC<ConducesListProps> = ({
                       <td className="p-3 text-slate-200">
                         <p className="font-medium text-white">{esEquipo ? c.equipoAsignado : 'Camión Volteo'}</p>
                         <p className="text-[10px] text-slate-400 font-mono">
-                          {esEquipo ? (c.placa ? `Placa: ${c.placa}` : 'Placa: N/D') : `Placa: ${c.placaCamion}`}
+                          {esEquipo ? (c.placa ? `Placa: ${c.placa}` : 'Placa: -') : `Placa: ${c.placaCamion || '-'}`}
                         </p>
                       </td>
 

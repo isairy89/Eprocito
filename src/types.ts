@@ -44,7 +44,7 @@ export interface Empleado {
 export const MATERIALES_ESTANDAR = [
   'Arena de pañete',
   'Arena gruesa',
-  'Arena de mina sucia',
+  'Arena de mina (sucia)',
   'Grava',
   'Granzote',
   'Base',
