@@ -64,6 +64,30 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
       }));
   }, [empleados, serviciosEquipos]);
 
+  // Equipos registrados en conduces anteriores que no están en catálogo ni asignados a empleados
+  const equiposDeConduces = useMemo(() => {
+    const nombresExistentes = new Set([
+      ...serviciosEquipos.map(s => s.nombre.toLowerCase().trim()),
+      ...vehiculosDeEmpleados.map(v => v.nombre.toLowerCase().trim())
+    ]);
+
+    const mapa = new Map<string, { id: string; nombre: string; placa: string }>();
+
+    conduces.forEach(c => {
+      if (c.tipo === 'equipo_pesado' && c.equipoAsignado) {
+        const nombreLower = c.equipoAsignado.toLowerCase().trim();
+        if (!nombresExistentes.has(nombreLower) && !mapa.has(nombreLower)) {
+          mapa.set(nombreLower, {
+            id: `hist-${c.id}`,
+            nombre: c.equipoAsignado,
+            placa: c.placa || ''
+          });
+        }
+      }
+    });
+    return Array.from(mapa.values());
+  }, [conduces, serviciosEquipos, vehiculosDeEmpleados]);
+
   const operadores = empleados.filter((e) => e.rol === 'operador' || e.rol === 'chofer');
   const chequeadores = empleados.filter((e) => e.rol === 'chequeador' || e.rol === 'administrativo');
 
@@ -177,6 +201,21 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
         isInitialEditLoad.current = false;
         return;
       }
+      
+      if (servicioId.startsWith('hist-')) {
+        // Es un equipo usado en un conduce anterior
+        const condId = servicioId.replace('hist-', '');
+        const pastConduce = conduces.find((c) => c.id === condId) as ConduceEquipoPesado;
+        if (pastConduce) {
+          if (!isInitialEditLoad.current) {
+            setEquipoAsignado(pastConduce.equipoAsignado || '');
+            setPlaca(pastConduce.placa || '');
+            if (!clienteId) setPrecioPorHora(0);
+          }
+        }
+        isInitialEditLoad.current = false;
+        return;
+      }
 
       const serv = servicios.find((s) => s.id === servicioId);
       if (serv) {
@@ -193,7 +232,7 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
       // Siempre desactivar el flag al terminar, independientemente de si serv existe
       isInitialEditLoad.current = false;
     }
-  }, [servicioId, clienteId, servicios, empleados]);
+  }, [servicioId, clienteId, servicios, empleados, conduces]);
 
   // Cálculo de Horas por Turno
   const calcularHorasTurno = (inicio: string, fin: string): number => {
@@ -265,7 +304,7 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
       clienteNombre: clienteObj ? clienteObj.nombre : 'Cliente Desconocido',
       direccionProyecto,
       telefonoContacto,
-      servicioId: servicioId.startsWith('emp-veh-') ? '' : servicioId,
+      servicioId: servicioId.startsWith('emp-veh-') || servicioId.startsWith('hist-') ? '' : servicioId,
       equipoAsignado,
       placa: placa.trim() || undefined,
       turnoManana: horasManana > 0 ? { inicio: mananaInicio, fin: mananaFin, horas: horasManana } : undefined,
@@ -414,6 +453,15 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
                     {vehiculosDeEmpleados.map((v) => (
                       <option key={v.id} value={v.id}>
                         {v.nombre}{v.placa ? ` — Placa: ${v.placa}` : ''}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {equiposDeConduces.length > 0 && (
+                  <optgroup label="Historial de Equipos Anteriores">
+                    {equiposDeConduces.map((eq) => (
+                      <option key={eq.id} value={eq.id}>
+                        {eq.nombre}{eq.placa ? ` — Placa: ${eq.placa}` : ''}
                       </option>
                     ))}
                   </optgroup>
