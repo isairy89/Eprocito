@@ -51,14 +51,18 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
   );
 
   // Vehículos asignados a empleados que no tienen servicio en catálogo
-  // (para cubrir el caso de equipo creado como empleado con vehiculoAsignado)
+  // (para cubrir el caso de equipo creado como empleado con vehiculoAsignado, o un equipo registrado directamente con su placa)
   const vehiculosDeEmpleados = useMemo(() => {
-    const nombresServiciosCatalogo = new Set(serviciosEquipos.map((s) => s.nombre));
+    const nombresServiciosCatalogo = new Set(serviciosEquipos.map((s) => s.nombre.toLowerCase().trim()));
     return empleados
-      .filter((e) => e.vehiculoAsignado && !nombresServiciosCatalogo.has(e.vehiculoAsignado))
+      .filter((e) => {
+        const nombreEquipo = (e.vehiculoAsignado || e.nombre).toLowerCase().trim();
+        const tieneEquipo = e.vehiculoAsignado || e.placaAsignada;
+        return tieneEquipo && !nombresServiciosCatalogo.has(nombreEquipo);
+      })
       .map((e) => ({
         id: `emp-veh-${e.id}`,
-        nombre: e.vehiculoAsignado!,
+        nombre: e.vehiculoAsignado || e.nombre,
         placa: e.placaAsignada || '',
         esDeEmpleado: true
       }));
@@ -191,7 +195,7 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
         const emp = empleados.find((e) => e.id === empId);
         if (emp) {
           if (!isInitialEditLoad.current) {
-            setEquipoAsignado(emp.vehiculoAsignado || '');
+            setEquipoAsignado(emp.vehiculoAsignado || emp.nombre);
             setPlaca(emp.placaAsignada || '');
             // No hay precio en catálogo para vehículo de empleado — mantener precio en 0 para forzar ingreso manual
             if (!clienteId) setPrecioPorHora(0);
