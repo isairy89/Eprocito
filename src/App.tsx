@@ -103,6 +103,19 @@ export default function App() {
     }
   };
 
+  // Guardar Cliente
+  const handleSaveCliente = (cli: Cliente) => {
+    const copia = [...clientes];
+    const idx = copia.findIndex((c) => c.id === cli.id);
+    if (idx >= 0) {
+      copia[idx] = cli;
+    } else {
+      copia.push(cli);
+    }
+    setClientes(copia);
+    StorageService.saveClientes(copia);
+  };
+
   // Guardar Servicio Base
   const handleSaveServicio = (serv: Servicio) => {
     const copia = [...servicios];
@@ -227,6 +240,7 @@ export default function App() {
               clientes={clientes}
               preciosCliente={preciosCliente}
               onSaveServicio={handleSaveServicio}
+              onSaveCliente={handleSaveCliente}
               onSavePrecioCliente={handleSavePrecioCliente}
               onDeletePrecioCliente={handleDeletePrecioCliente}
             />

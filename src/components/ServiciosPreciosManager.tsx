@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Servicio, Cliente, PrecioCliente, UnidadCobro } from '../types';
-import { DollarSign, Plus, Edit2, Trash2, Check, ShieldCheck, AlertCircle } from 'lucide-react';
+import { DollarSign, Plus, Edit2, Trash2, Check, ShieldCheck, UserPlus, Building2 } from 'lucide-react';
 
 interface ServiciosPreciosManagerProps {
   servicios: Servicio[];
   clientes: Cliente[];
   preciosCliente: PrecioCliente[];
   onSaveServicio: (servicio: Servicio) => void;
+  onSaveCliente?: (cliente: Cliente) => void;
   onSavePrecioCliente: (precio: PrecioCliente) => void;
   onDeletePrecioCliente: (id: string) => void;
 }
@@ -16,6 +17,7 @@ export const ServiciosPreciosManager: React.FC<ServiciosPreciosManagerProps> = (
   clientes,
   preciosCliente,
   onSaveServicio,
+  onSaveCliente,
   onSavePrecioCliente,
   onDeletePrecioCliente
 }) => {
@@ -27,6 +29,14 @@ export const ServiciosPreciosManager: React.FC<ServiciosPreciosManagerProps> = (
   const [categoriaServicio, setCategoriaServicio] = useState<'equipo_pesado' | 'material' | 'acarreo_servicio'>('equipo_pesado');
   const [unidadCobro, setUnidadCobro] = useState<UnidadCobro>('hora');
   const [precioBase, setPrecioBase] = useState<number>(1000);
+
+  // Estado Formulario Cliente
+  const [modalCliente, setModalCliente] = useState<boolean>(false);
+  const [nombreCliente, setNombreCliente] = useState<string>('');
+  const [rncCliente, setRncCliente] = useState<string>('');
+  const [contactoCliente, setContactoCliente] = useState<string>('');
+  const [telefonoCliente, setTelefonoCliente] = useState<string>('');
+  const [direccionCliente, setDireccionCliente] = useState<string>('');
 
   // Estado Formulario Tarifario Dinámico Cliente
   const [clienteSelId, setClienteSelId] = useState<string>('');
@@ -49,6 +59,37 @@ export const ServiciosPreciosManager: React.FC<ServiciosPreciosManagerProps> = (
       setPrecioBase(1000);
     }
     setModalServicio(true);
+  };
+
+  // Abrir Modal Cliente
+  const handleOpenClienteModal = () => {
+    setNombreCliente('');
+    setRncCliente('');
+    setContactoCliente('');
+    setTelefonoCliente('');
+    setDireccionCliente('');
+    setModalCliente(true);
+  };
+
+  // Guardar Cliente
+  const handleGuardarCliente = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nombreCliente.trim()) return;
+
+    const nuevoCliente: Cliente = {
+      id: `cli-${Date.now()}`,
+      nombre: nombreCliente.trim(),
+      rnc: rncCliente.trim() || 'S/R',
+      contacto: contactoCliente.trim(),
+      telefono: telefonoCliente.trim(),
+      direccion: direccionCliente.trim(),
+      proyectoPredeterminado: direccionCliente.trim()
+    };
+
+    if (onSaveCliente) {
+      onSaveCliente(nuevoCliente);
+    }
+    setModalCliente(false);
   };
 
   // Guardar Servicio Base
@@ -102,12 +143,20 @@ export const ServiciosPreciosManager: React.FC<ServiciosPreciosManagerProps> = (
             </p>
           </div>
 
-          <button
-            onClick={() => handleOpenServicioModal()}
-            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Nuevo Servicio Catálogo
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleOpenClienteModal()}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4 text-amber-400" /> Nuevo Cliente
+            </button>
+            <button
+              onClick={() => handleOpenServicioModal()}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Nuevo Servicio Catálogo
+            </button>
+          </div>
         </div>
 
         {/* Regla Importante Regla #2 */}
@@ -331,6 +380,92 @@ export const ServiciosPreciosManager: React.FC<ServiciosPreciosManagerProps> = (
                   className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg"
                 >
                   Guardar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Crear Cliente */}
+      {modalCliente && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4">
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-amber-400" /> Nuevo Cliente
+            </h3>
+
+            <form onSubmit={handleGuardarCliente} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 mb-1 font-medium">Nombre del Cliente / Empresa *</label>
+                <input
+                  type="text"
+                  required
+                  value={nombreCliente}
+                  onChange={(e) => setNombreCliente(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:border-amber-500"
+                  placeholder="ej. New Hope Dominicana"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 mb-1">RNC / Cédula</label>
+                  <input
+                    type="text"
+                    value={rncCliente}
+                    onChange={(e) => setRncCliente(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-mono"
+                    placeholder="1-01-00000-0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-300 mb-1">Teléfono</label>
+                  <input
+                    type="text"
+                    value={telefonoCliente}
+                    onChange={(e) => setTelefonoCliente(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white"
+                    placeholder="(809) 000-0000"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 mb-1">Contacto Principal</label>
+                <input
+                  type="text"
+                  value={contactoCliente}
+                  onChange={(e) => setContactoCliente(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white"
+                  placeholder="ej. Ing. Juan Pérez"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 mb-1">Dirección / Proyecto Principal</label>
+                <input
+                  type="text"
+                  value={direccionCliente}
+                  onChange={(e) => setDireccionCliente(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white"
+                  placeholder="ej. Proyecto Carretera Mella Km 12"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setModalCliente(false)}
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg font-semibold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg cursor-pointer"
+                >
+                  Guardar Cliente
                 </button>
               </div>
             </form>

@@ -24,19 +24,29 @@ const KEYS = {
 function getItem<T>(key: string, defaultValue: T): T {
   try {
     const data = localStorage.getItem(key);
-    if (!data) return defaultValue;
+    if (data === null) {
+      // Si la clave no existe en localStorage (primera ejecución), sembrar los datos iniciales
+      try {
+        localStorage.setItem(key, JSON.stringify(defaultValue));
+      } catch (e) {
+        console.warn(`No se pudo inicializar ${key} en localStorage:`, e);
+      }
+      return defaultValue;
+    }
     return JSON.parse(data) as T;
   } catch (err) {
-    console.error(`Error al leer ${key} de localStorage:`, err);
+    console.error(`Error al leer o parsear ${key} de localStorage:`, err);
     return defaultValue;
   }
 }
 
-function setItem<T>(key: string, value: T): void {
+function setItem<T>(key: string, value: T): boolean {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch (err) {
     console.error(`Error al guardar ${key} en localStorage:`, err);
+    return false;
   }
 }
 
