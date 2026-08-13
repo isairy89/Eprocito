@@ -22,21 +22,33 @@ const KEYS = {
 };
 
 function getItem<T>(key: string, defaultValue: T): T {
+  let rawData: string | null = null;
   try {
-    const data = localStorage.getItem(key);
-    if (data === null) {
-      // Si la clave no existe en localStorage (primera ejecución), sembrar los datos iniciales
-      try {
-        localStorage.setItem(key, JSON.stringify(defaultValue));
-      } catch (e) {
-        console.warn(`No se pudo inicializar ${key} en localStorage:`, e);
-      }
-      return defaultValue;
-    }
-    return JSON.parse(data) as T;
+    rawData = localStorage.getItem(key);
   } catch (err) {
-    console.error(`Error al leer o parsear ${key} de localStorage:`, err);
+    console.error(`Error al acceder a localStorage para ${key}:`, err);
+    return (Array.isArray(defaultValue) ? [] : {}) as unknown as T;
+  }
+
+  // CASO A: Primera instalación (clave no existe)
+  if (rawData === null) {
+    try {
+      localStorage.setItem(key, JSON.stringify(defaultValue));
+    } catch (e) {
+      console.warn(`No se pudo inicializar ${key} en localStorage:`, e);
+    }
     return defaultValue;
+  }
+
+  // CASO B: Clave existe -> Intentar parsear
+  try {
+    return JSON.parse(rawData) as T;
+  } catch (parseErr) {
+    // CASO C: Error al parsear datos existentes
+    // CRÍTICO: NO retornar defaultValue (initialData) para evitar reemplazar
+    // datos reales por la plantilla inicial. Tampoco sobrescribir localStorage.
+    console.error(`Error de parseo JSON en ${key}. Se conservan los datos de localStorage sin sobrescribir:`, parseErr);
+    return (Array.isArray(defaultValue) ? [] : {}) as unknown as T;
   }
 }
 
