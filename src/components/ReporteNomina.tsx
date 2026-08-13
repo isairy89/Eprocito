@@ -57,10 +57,17 @@ export const ReporteNomina: React.FC<ReporteNominaProps> = ({
   const totalMetrosGen = filasNomina.reduce((s, f) => s + f.metros, 0);
   const totalMontoGen = filasNomina.reduce((s, f) => s + f.importeServicio, 0);
 
+  // Nombre del cliente seleccionado para el reporte
+  const clienteNombreSeleccionado = useMemo(() => {
+    if (!clienteId) return 'Todos los Clientes';
+    return clientes.find((c) => c.id === clienteId)?.nombre || 'Todos los Clientes';
+  }, [clienteId, clientes]);
+
   const filtrosActuales: FiltrosReporte = {
     fechaInicio,
     fechaFin,
     clienteId,
+    clienteNombre: clienteNombreSeleccionado,
     empleadoNombre
   };
 
@@ -161,6 +168,28 @@ export const ReporteNomina: React.FC<ReporteNominaProps> = ({
             >
               Limpiar Filtros
             </button>
+          </div>
+        </div>
+
+        {/* Resumen de Filtros Aplicados */}
+        <div className="bg-slate-800/80 border border-slate-700/70 rounded-xl p-3 flex flex-wrap items-center justify-between text-xs text-slate-300 gap-2 mt-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-amber-400 flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Filtros Activos:
+            </span>
+            <span className="bg-slate-900 px-2.5 py-1 rounded-md border border-slate-700/80">
+              <strong className="text-slate-400">Rango:</strong> {fechaInicio || 'Inicio'} a {fechaFin || 'Hoy'}
+            </span>
+            <span className="bg-slate-900 px-2.5 py-1 rounded-md border border-slate-700/80">
+              <strong className="text-slate-400">Cliente:</strong> {clienteNombreSeleccionado}
+            </span>
+            <span className="bg-slate-900 px-2.5 py-1 rounded-md border border-slate-700/80">
+              <strong className="text-slate-400">Chofer/Operador:</strong> {empleadoNombre || 'Todos'}
+            </span>
+          </div>
+          <div className="text-emerald-400 font-mono font-bold bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/20">
+            {filasNomina.length} registro(s) operativo(s) en {conducesFiltrados.length} conduce(s)
           </div>
         </div>
 

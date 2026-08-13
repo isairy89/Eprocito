@@ -140,6 +140,7 @@ export interface FiltrosReporte {
   fechaInicio: string;
   fechaFin: string;
   clienteId: string; // '' para todos
+  clienteNombre?: string;
   empleadoNombre: string; // '' para todos
   servicioId?: string;
 }

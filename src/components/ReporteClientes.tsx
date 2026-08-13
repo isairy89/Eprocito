@@ -57,10 +57,17 @@ export const ReporteClientes: React.FC<ReporteClientesProps> = ({
   const totalMetros = filasReporte.reduce((s, f) => s + f.metros, 0);
   const totalMontoGeneral = filasReporte.reduce((s, f) => s + f.total, 0);
 
+  // Nombre del cliente seleccionado para los reportes
+  const clienteNombreSeleccionado = useMemo(() => {
+    if (!clienteId) return 'Todos los Clientes';
+    return clientes.find((c) => c.id === clienteId)?.nombre || 'Todos los Clientes';
+  }, [clienteId, clientes]);
+
   const filtrosActuales: FiltrosReporte = {
     fechaInicio,
     fechaFin,
     clienteId,
+    clienteNombre: clienteNombreSeleccionado,
     empleadoNombre
   };
 
@@ -161,6 +168,28 @@ export const ReporteClientes: React.FC<ReporteClientesProps> = ({
             </button>
           </div>
 
+        </div>
+
+        {/* Resumen de Filtros Aplicados */}
+        <div className="bg-slate-800/80 border border-slate-700/70 rounded-xl p-3 flex flex-wrap items-center justify-between text-xs text-slate-300 gap-2 mt-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-amber-400 flex items-center gap-1">
+              <Filter className="w-3.5 h-3.5" />
+              Filtros Activos:
+            </span>
+            <span className="bg-slate-900 px-2.5 py-1 rounded-md border border-slate-700/80">
+              <strong className="text-slate-400">Rango:</strong> {fechaInicio || 'Inicio'} a {fechaFin || 'Hoy'}
+            </span>
+            <span className="bg-slate-900 px-2.5 py-1 rounded-md border border-slate-700/80">
+              <strong className="text-slate-400">Cliente:</strong> {clienteNombreSeleccionado}
+            </span>
+            <span className="bg-slate-900 px-2.5 py-1 rounded-md border border-slate-700/80">
+              <strong className="text-slate-400">Chofer/Operador:</strong> {empleadoNombre || 'Todos'}
+            </span>
+          </div>
+          <div className="text-amber-400 font-mono font-bold bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/20">
+            {filasReporte.length} detalle(s) en {conducesFiltrados.length} conduce(s)
+          </div>
         </div>
       </div>
 

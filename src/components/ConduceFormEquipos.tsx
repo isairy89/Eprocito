@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Cliente,
   Servicio,
@@ -67,9 +67,12 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
   // Mensajes de Validación
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Autogenerar Número de Conduce al crear nuevo
+  const isInitialEditLoad = useRef<boolean>(!!conduceExistente);
+
+  // Autogenerar Número de Conduce al crear nuevo o cargar datos al editar
   useEffect(() => {
     if (conduceExistente) {
+      isInitialEditLoad.current = true;
       setNumeroConduce(conduceExistente.numeroConduce);
       setFecha(conduceExistente.fecha);
       setClienteId(conduceExistente.clienteId);
@@ -98,6 +101,7 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
       setChequeadorNombre(conduceExistente.chequeadorNombre);
       setObservaciones(conduceExistente.observaciones || '');
     } else {
+      isInitialEditLoad.current = false;
       const randomNum = Math.floor(100 + Math.random() * 900);
       setNumeroConduce(`EP-00${randomNum}`);
     }
@@ -111,8 +115,8 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
         if (!direccionProyecto) setDireccionProyecto(cli.direccion || cli.proyectoPredeterminado || '');
         if (!telefonoContacto) setTelefonoContacto(cli.telefono || '');
       }
-      // Actualizar precio si hay servicio seleccionado
-      if (servicioId) {
+      // Actualizar precio solo si el usuario interactúa activamente (no en la carga inicial de edición)
+      if (servicioId && !isInitialEditLoad.current) {
         const precioDinamico = StorageService.obtenerPrecioAcordado(clienteId, servicioId);
         setPrecioPorHora(precioDinamico);
       }
@@ -125,11 +129,16 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
       const serv = servicios.find((s) => s.id === servicioId);
       if (serv) {
         setEquipoAsignado(serv.nombre);
-        if (clienteId) {
-          const precioDinamico = StorageService.obtenerPrecioAcordado(clienteId, servicioId);
-          setPrecioPorHora(precioDinamico);
+        if (!isInitialEditLoad.current) {
+          if (clienteId) {
+            const precioDinamico = StorageService.obtenerPrecioAcordado(clienteId, servicioId);
+            setPrecioPorHora(precioDinamico);
+          } else {
+            setPrecioPorHora(serv.precioBase);
+          }
         } else {
-          setPrecioPorHora(serv.precioBase);
+          // Desactivar bandera de carga inicial para cambios futuros del usuario
+          isInitialEditLoad.current = false;
         }
       }
     }

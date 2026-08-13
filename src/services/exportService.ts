@@ -170,15 +170,25 @@ export class ExportService {
       'Monto Subtotal ($)': totalMonto
     });
 
+    const clienteNombreTexto = filtros.clienteNombre || (filtros.clienteId ? filtros.clienteId : 'Todos los Clientes');
+    const choferTexto = filtros.empleadoNombre ? filtros.empleadoNombre : 'Todos los Operadores / Choferes';
+    const rangoTexto = (filtros.fechaInicio || filtros.fechaFin)
+      ? `${filtros.fechaInicio || 'Inicio'} al ${filtros.fechaFin || 'Hoy'}`
+      : 'Todos los periodos';
+
     const encabezados = [
       ['EQUIPOS Y PROYECTOS CIVILES, S.R.L. (EQUIPROCI)'],
       ['REPORTE DE PRODUCCIÓN Y TRABAJO A CLIENTES'],
-      [`Rango: ${filtros.fechaInicio || 'Inicio'} al ${filtros.fechaFin || 'Hoy'}`],
+      ['FILTROS APLICADOS EN ESTE REPORTE:'],
+      [`  • Periodo / Fechas: ${rangoTexto}`],
+      [`  • Cliente: ${clienteNombreTexto}`],
+      [`  • Operador / Chofer: ${choferTexto}`],
+      [`  • Total Registros: ${filas.length}`],
       []
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet(encabezados);
-    XLSX.utils.sheet_add_json(worksheet, datosExcel, { origin: 'A5' });
+    XLSX.utils.sheet_add_json(worksheet, datosExcel, { origin: 'A9' });
 
     worksheet['!cols'] = [
       { wch: 12 }, { wch: 15 }, { wch: 25 }, { wch: 25 },
@@ -196,16 +206,23 @@ export class ExportService {
     const doc = new jsPDF('landscape', 'mm', 'a4');
     const filas = this.procesarFilasReporteCliente(conduces);
 
-    // Encabezado
-    doc.setFontSize(16);
-    doc.setTextColor(20, 40, 80);
-    doc.text('EQUIPOS Y PROYECTOS CIVILES, S.R.L. (EQUIPROCI)', 14, 15);
-    doc.setFontSize(12);
-    doc.text('Reporte de Producción y Trabajo a Clientes', 14, 22);
+    const clienteNombreTexto = filtros.clienteNombre || (filtros.clienteId ? filtros.clienteId : 'Todos los Clientes');
+    const choferTexto = filtros.empleadoNombre ? filtros.empleadoNombre : 'Todos los Operadores / Choferes';
+    const rangoTexto = (filtros.fechaInicio || filtros.fechaFin)
+      ? `${filtros.fechaInicio || 'Inicio'} al ${filtros.fechaFin || 'Hoy'}`
+      : 'Todos los periodos';
 
-    doc.setFontSize(9);
-    doc.setTextColor(80, 80, 80);
-    doc.text(`Periodo: ${filtros.fechaInicio || 'Todos'} a ${filtros.fechaFin || 'Todos'} | Generado: ${new Date().toLocaleDateString('es-DO')}`, 14, 28);
+    // Encabezado
+    doc.setFontSize(15);
+    doc.setTextColor(20, 40, 80);
+    doc.text('EQUIPOS Y PROYECTOS CIVILES, S.R.L. (EQUIPROCI)', 14, 12);
+    doc.setFontSize(11);
+    doc.text('Reporte de Producción y Trabajo a Clientes', 14, 18);
+
+    doc.setFontSize(8);
+    doc.setTextColor(60, 60, 60);
+    doc.text(`FILTROS APLICADOS -> Periodo: ${rangoTexto}  |  Cliente: ${clienteNombreTexto}  |  Chofer/Operador: ${choferTexto}  |  Registros: ${filas.length}`, 14, 24);
+    doc.text(`Fecha de emisión del documento: ${new Date().toLocaleDateString('es-DO')} ${new Date().toLocaleTimeString('es-DO')}`, 14, 28);
 
     const head = [['Fecha', 'No. Conduce', 'Cliente', 'Proyecto', 'Servicio/Material', 'Equipo', 'Placa', 'Horas', 'Viajes', 'Metros', 'Precio Unit.', 'Total ($)']];
 
@@ -298,16 +315,26 @@ export class ExportService {
       'Pago Est. Nómina ($)': 'Pendiente de definir'
     });
 
+    const clienteNombreTexto = filtros.clienteNombre || (filtros.clienteId ? filtros.clienteId : 'Todos los Clientes');
+    const choferTexto = filtros.empleadoNombre ? filtros.empleadoNombre : 'Todos los Operadores / Choferes';
+    const rangoTexto = (filtros.fechaInicio || filtros.fechaFin)
+      ? `${filtros.fechaInicio || 'Inicio'} al ${filtros.fechaFin || 'Hoy'}`
+      : 'Todos los periodos';
+
     const encabezados = [
       ['EQUIPOS Y PROYECTOS CIVILES, S.R.L. (EQUIPROCI)'],
       ['REPORTE DE PRODUCCIÓN OPERATIVA Y RESUMEN PARA NÓMINA DE EMPLEADOS'],
-      [`Periodo: ${filtros.fechaInicio || 'Inicio'} al ${filtros.fechaFin || 'Hoy'}`],
+      ['FILTROS APLICADOS EN ESTE REPORTE:'],
+      [`  • Periodo / Fechas: ${rangoTexto}`],
+      [`  • Cliente: ${clienteNombreTexto}`],
+      [`  • Operador / Chofer: ${choferTexto}`],
+      [`  • Total Registros: ${filas.length}`],
       ['Nota: Los valores reflejan el importe del servicio al cliente. El pago final de nómina dependerá de la regla salarial definida por la empresa.'],
       []
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet(encabezados);
-    XLSX.utils.sheet_add_json(worksheet, datosExcel, { origin: 'A6' });
+    XLSX.utils.sheet_add_json(worksheet, datosExcel, { origin: 'A10' });
 
     worksheet['!cols'] = [
       { wch: 25 }, { wch: 20 }, { wch: 12 }, { wch: 14 },
@@ -325,17 +352,23 @@ export class ExportService {
     const doc = new jsPDF('landscape', 'mm', 'a4');
     const filas = this.procesarFilasReporteNomina(conduces);
 
+    const clienteNombreTexto = filtros.clienteNombre || (filtros.clienteId ? filtros.clienteId : 'Todos los Clientes');
+    const choferTexto = filtros.empleadoNombre ? filtros.empleadoNombre : 'Todos los Operadores / Choferes';
+    const rangoTexto = (filtros.fechaInicio || filtros.fechaFin)
+      ? `${filtros.fechaInicio || 'Inicio'} al ${filtros.fechaFin || 'Hoy'}`
+      : 'Todos los periodos';
+
     // Encabezado
-    doc.setFontSize(16);
+    doc.setFontSize(15);
     doc.setTextColor(20, 40, 80);
-    doc.text('EQUIPOS Y PROYECTOS CIVILES, S.R.L. (EQUIPROCI)', 14, 15);
-    doc.setFontSize(12);
-    doc.text('Reporte de Resumen de Producción Operativa para Empleados', 14, 22);
+    doc.text('EQUIPOS Y PROYECTOS CIVILES, S.R.L. (EQUIPROCI)', 14, 12);
+    doc.setFontSize(11);
+    doc.text('Reporte de Resumen Operativo y Producción para Empleados', 14, 18);
 
     doc.setFontSize(8);
-    doc.setTextColor(80, 80, 80);
-    doc.text(`Periodo: ${filtros.fechaInicio || 'Todos'} a ${filtros.fechaFin || 'Todos'} | Operador/Chofer: ${filtros.empleadoNombre || 'Todos'}`, 14, 27);
-    doc.text('Nota: Los importes corresponden al servicio facturado al cliente. El pago de nómina está pendiente de definir.', 14, 31);
+    doc.setTextColor(60, 60, 60);
+    doc.text(`FILTROS APLICADOS -> Periodo: ${rangoTexto}  |  Cliente: ${clienteNombreTexto}  |  Chofer/Operador: ${choferTexto}  |  Registros: ${filas.length}`, 14, 24);
+    doc.text('Nota: Los importes corresponden al servicio facturado al cliente. El pago de nómina está pendiente de definir por la empresa.', 14, 28);
 
     const head = [['Chofer / Operador', 'Equipo/Vehículo', 'Placa', 'Fecha', 'No. Conduce', 'Cliente', 'Servicio', 'H.T.', 'Viajes', 'm³', 'Precio Serv.', 'Imp. Servicio ($)', 'Pago Nómina']];
 
