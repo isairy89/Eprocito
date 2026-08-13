@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Cliente,
   Servicio,
   Empleado,
+  Conduce,
   ConduceMaterial,
   DetalleMaterialConduce,
   MATERIALES_ESTANDAR,
@@ -15,15 +16,33 @@ interface ConduceFormMaterialesProps {
   clientes: Cliente[];
   servicios: Servicio[];
   empleados: Empleado[];
+  conduces: Conduce[];
   onSave: (conduce: ConduceMaterial) => void;
   onCancel: () => void;
   conduceExistente?: ConduceMaterial | null;
+}
+
+/**
+ * Genera el siguiente número de conduce de materiales (E-XXXXX)
+ * basándose en el máximo existente, evitando colisiones.
+ */
+function generarSiguienteNumeroE(conduces: Conduce[]): string {
+  const numerosExistentes = conduces
+    .filter((c) => c.tipo === 'materiales')
+    .map((c) => {
+      const match = c.numeroConduce.match(/E-0*(\d+)$/);
+      return match ? parseInt(match[1], 10) : 0;
+    });
+  const maxNumero = numerosExistentes.length > 0 ? Math.max(...numerosExistentes) : 500;
+  const siguiente = maxNumero + 1;
+  return `E-${String(siguiente).padStart(5, '0')}`;
 }
 
 export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
   clientes,
   servicios,
   empleados,
+  conduces,
   onSave,
   onCancel,
   conduceExistente
@@ -42,22 +61,27 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
   const [recibidoConforme, setRecibidoConforme] = useState<string>('');
   const [observaciones, setObservaciones] = useState<string>('');
 
-  // Filas de Detalle de Materiales
-  const [detalles, setDetalles] = useState<DetalleMaterialConduce[]>([
-    {
-      material: 'Sub-base',
-      cantidad: 28,
-      unidad: 'metro',
-      precioUnitario: 650,
-      subtotal: 18200
-    }
-  ]);
+  // Fila inicial vacía: sin datos ficticios
+  const filaVacia: DetalleMaterialConduce = {
+    material: MATERIALES_ESTANDAR[0],
+    cantidad: 0,
+    unidad: 'metro',
+    precioUnitario: 0,
+    subtotal: 0
+  };
+
+  // Filas de Detalle de Materiales — sin datos ficticios por defecto
+  const [detalles, setDetalles] = useState<DetalleMaterialConduce[]>([{ ...filaVacia }]);
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Flag para evitar autocompletar placa durante carga inicial de edición
+  const isInitialLoad = useRef<boolean>(!!conduceExistente);
 
   // Inicialización
   useEffect(() => {
     if (conduceExistente) {
+      isInitialLoad.current = true;
       setNumeroConduce(conduceExistente.numeroConduce);
       setFecha(conduceExistente.fecha);
       setClienteId(conduceExistente.clienteId);
@@ -69,8 +93,9 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
       setDetalles(conduceExistente.detalles);
       setObservaciones(conduceExistente.observaciones || '');
     } else {
-      const randomNum = Math.floor(100 + Math.random() * 900);
-      setNumeroConduce(`E-00${randomNum}`);
+      isInitialLoad.current = false;
+      // Generar número consecutivo basado en conduces existentes
+      setNumeroConduce(generarSiguienteNumeroE(conduces));
     }
   }, [conduceExistente]);
 
@@ -85,26 +110,25 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
   }, [clienteId, clientes]);
 
   // Al seleccionar chofer, autocompletar placa si tiene asignada
+  // Usar ref para evitar sobreescribir la placa original al cargar en modo edición
   useEffect(() => {
-    if (choferNombre) {
+    if (choferNombre && !isInitialLoad.current) {
       const emp = choferes.find((e) => e.nombre === choferNombre);
       if (emp && emp.placaAsignada && !placaCamion) {
         setPlacaCamion(emp.placaAsignada);
       }
     }
-  }, [choferNombre, choferes]);
+    // Desactivar flag después del primer dispatch del efecto en modo edición
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+    }
+  }, [choferNombre]);
 
-  // Agregar nueva fila de material
+  // Agregar nueva fila de material — sin datos ficticios
   const agregarFilaMaterial = () => {
     setDetalles([
       ...detalles,
-      {
-        material: MATERIALES_ESTANDAR[0],
-        cantidad: 10,
-        unidad: 'metro',
-        precioUnitario: 800,
-        subtotal: 10 * 800
-      }
+      { ...filaVacia }
     ]);
   };
 
@@ -140,7 +164,6 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
   // Totales generales:
   // - 'metro': aporta a totalMetros, 0 viajes
   // - 'viaje': aporta a totalViajes, 0 metros
-  // - 'hora': aporta a horas (no convierte metros a viajes usando la capacidad del camión)
   const totalMetrosCalculado = detalles
     .filter((d) => d.unidad === 'metro')
     .reduce((sum, d) => sum + d.cantidad, 0);
@@ -264,7 +287,7 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
                 value={numeroConduce}
                 onChange={(e) => setNumeroConduce(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-mono font-bold focus:border-amber-500"
-                placeholder="E-00500"
+                placeholder="E-00501"
               />
             </div>
 
@@ -421,19 +444,22 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
                       <input
                         type="number"
                         step="0.1"
-                        min="0.1"
-                        value={item.cantidad}
+                        min="0"
+                        value={item.cantidad === 0 ? '' : item.cantidad}
                         onChange={(e) => actualizarFila(idx, 'cantidad', parseFloat(e.target.value) || 0)}
                         className="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-white text-right font-mono font-bold"
+                        placeholder="0"
                       />
                     </td>
 
                     <td className="p-2 text-right">
                       <input
                         type="number"
-                        value={item.precioUnitario}
+                        min="0"
+                        value={item.precioUnitario === 0 ? '' : item.precioUnitario}
                         onChange={(e) => actualizarFila(idx, 'precioUnitario', parseFloat(e.target.value) || 0)}
                         className="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-white text-right font-mono"
+                        placeholder="0"
                       />
                     </td>
 

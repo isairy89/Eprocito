@@ -76,7 +76,7 @@ export class ExportService {
             clienteNombre: c.clienteNombre,
             proyecto: c.direccionProyecto || '-',
             itemDetalle: det.material,
-            equipoNombre: 'Camión Volteo',
+            equipoNombre: `Camión/Volteo${c.placaCamion ? ` (${c.placaCamion})` : ''}`,
             placa: c.placaCamion || '',
             horas: det.unidad === 'hora' ? det.cantidad : 0,
             viajes: det.unidad === 'viaje' ? det.cantidad : 0,
@@ -119,7 +119,7 @@ export class ExportService {
         (c.detalles || []).forEach((det) => {
           filas.push({
             empleadoNombre: c.choferNombre || 'Sin Asignar',
-            equipoNombre: 'Camión Volteo',
+            equipoNombre: `Camión/Volteo${c.placaCamion ? ` (${c.placaCamion})` : ''}`,
             placa: c.placaCamion || '',
             fecha: c.fecha,
             numeroConduce: c.numeroConduce,
@@ -300,7 +300,7 @@ export class ExportService {
       'Volumen (m³)': f.metros || '-',
       'Precio Servicio ($)': f.precioServicio,
       'Importe Servicio ($)': f.importeServicio,
-      'Pago Est. Nómina ($)': f.pagoNomina
+      'Nota: Pago Nómina': f.pagoNomina
     }));
 
     const totalHoras = filas.reduce((sum, f) => sum + f.horasTrabajadas, 0);
@@ -321,7 +321,7 @@ export class ExportService {
       'Volumen (m³)': totalMetros,
       'Precio Servicio ($)': 0,
       'Importe Servicio ($)': totalMonto,
-      'Pago Est. Nómina ($)': 'Pendiente de definir'
+      'Nota: Pago Nómina': 'Pendiente de definir'
     });
 
     const clienteNombreTexto = filtros.clienteNombre || (filtros.clienteId ? filtros.clienteId : 'Todos los Clientes');

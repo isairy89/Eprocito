@@ -38,6 +38,7 @@ export interface Empleado {
   telefono?: string;
   vehiculoAsignado?: string;
   placaAsignada?: string;
+  salarioBase?: number;
 }
 
 // Materiales estándar para Conduce E

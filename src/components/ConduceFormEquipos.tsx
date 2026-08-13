@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Cliente,
   Servicio,
   Empleado,
+  Conduce,
   ConduceEquipoPesado,
   TurnoHorario
 } from '../types';
@@ -13,23 +14,55 @@ interface ConduceFormEquiposProps {
   clientes: Cliente[];
   servicios: Servicio[];
   empleados: Empleado[];
+  conduces: Conduce[];
   onSave: (conduce: ConduceEquipoPesado) => void;
   onCancel: () => void;
   conduceExistente?: ConduceEquipoPesado | null;
+}
+
+/**
+ * Genera el siguiente número de conduce de equipo pesado (EP-XXXXX)
+ * basándose en el máximo existente, evitando colisiones.
+ */
+function generarSiguienteNumeroEP(conduces: Conduce[]): string {
+  const numerosExistentes = conduces
+    .filter((c) => c.tipo === 'equipo_pesado')
+    .map((c) => {
+      const match = c.numeroConduce.match(/EP-0*(\d+)$/);
+      return match ? parseInt(match[1], 10) : 0;
+    });
+  const maxNumero = numerosExistentes.length > 0 ? Math.max(...numerosExistentes) : 100;
+  const siguiente = maxNumero + 1;
+  return `EP-${String(siguiente).padStart(5, '0')}`;
 }
 
 export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
   clientes,
   servicios,
   empleados,
+  conduces,
   onSave,
   onCancel,
   conduceExistente
 }) => {
-  // Filtrar solo servicios que aplican para equipos por hora
+  // Filtrar servicios que aplican para equipos por hora
   const serviciosEquipos = servicios.filter(
     (s) => s.categoria === 'equipo_pesado' || s.unidadCobro === 'hora'
   );
+
+  // Vehículos asignados a empleados que no tienen servicio en catálogo
+  // (para cubrir el caso de equipo creado como empleado con vehiculoAsignado)
+  const vehiculosDeEmpleados = useMemo(() => {
+    const nombresServiciosCatalogo = new Set(serviciosEquipos.map((s) => s.nombre));
+    return empleados
+      .filter((e) => e.vehiculoAsignado && !nombresServiciosCatalogo.has(e.vehiculoAsignado))
+      .map((e) => ({
+        id: `emp-veh-${e.id}`,
+        nombre: e.vehiculoAsignado!,
+        placa: e.placaAsignada || '',
+        esDeEmpleado: true
+      }));
+  }, [empleados, serviciosEquipos]);
 
   const operadores = empleados.filter((e) => e.rol === 'operador' || e.rol === 'chofer');
   const chequeadores = empleados.filter((e) => e.rol === 'chequeador' || e.rol === 'administrativo');
@@ -45,18 +78,18 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
   const [equipoAsignado, setEquipoAsignado] = useState<string>('');
   const [placa, setPlaca] = useState<string>('');
 
-  // Turnos
-  const [mananaInicio, setMananaInicio] = useState<string>('08:00');
-  const [mananaFin, setMananaFin] = useState<string>('12:00');
+  // Turnos — inicio/fin vacíos para que el usuario los llene conscientemente
+  const [mananaInicio, setMananaInicio] = useState<string>('');
+  const [mananaFin, setMananaFin] = useState<string>('');
   
-  const [tardeInicio, setTardeInicio] = useState<string>('13:00');
-  const [tardeFin, setTardeFin] = useState<string>('17:00');
+  const [tardeInicio, setTardeInicio] = useState<string>('');
+  const [tardeFin, setTardeFin] = useState<string>('');
   
   const [nocheInicio, setNocheInicio] = useState<string>('');
   const [nocheFin, setNocheFin] = useState<string>('');
 
   // Horas y Precio
-  const [totalHorasPagar, setTotalHorasPagar] = useState<number>(8);
+  const [totalHorasPagar, setTotalHorasPagar] = useState<number>(0);
   const [precioPorHora, setPrecioPorHora] = useState<number>(0);
 
   // Empleados asignados
@@ -67,6 +100,7 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
   // Mensajes de Validación
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Flag para evitar actualizar precio/equipo al cargar un conduce existente
   const isInitialEditLoad = useRef<boolean>(!!conduceExistente);
 
   // Autogenerar Número de Conduce al crear nuevo o cargar datos al editar
@@ -102,8 +136,8 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
       setObservaciones(conduceExistente.observaciones || '');
     } else {
       isInitialEditLoad.current = false;
-      const randomNum = Math.floor(100 + Math.random() * 900);
-      setNumeroConduce(`EP-00${randomNum}`);
+      // Generar número consecutivo basado en conduces existentes
+      setNumeroConduce(generarSiguienteNumeroEP(conduces));
     }
   }, [conduceExistente]);
 
@@ -123,26 +157,43 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
     }
   }, [clienteId, clientes]);
 
-  // Al seleccionar servicio, actualizar equipo asignado y precio por hora
+  // Al seleccionar servicio del catálogo, actualizar equipo asignado y precio por hora
   useEffect(() => {
     if (servicioId) {
+      // Es un servicio del catálogo
+      if (servicioId.startsWith('emp-veh-')) {
+        // Es un vehículo de empleado — no buscar en servicios del catálogo
+        const empId = servicioId.replace('emp-veh-', '');
+        const emp = empleados.find((e) => e.id === empId);
+        if (emp) {
+          if (!isInitialEditLoad.current) {
+            setEquipoAsignado(emp.vehiculoAsignado || '');
+            setPlaca(emp.placaAsignada || '');
+            // No hay precio en catálogo para vehículo de empleado — mantener precio en 0 para forzar ingreso manual
+            if (!clienteId) setPrecioPorHora(0);
+          }
+        }
+        // Siempre desactivar flag al terminar
+        isInitialEditLoad.current = false;
+        return;
+      }
+
       const serv = servicios.find((s) => s.id === servicioId);
       if (serv) {
-        setEquipoAsignado(serv.nombre);
         if (!isInitialEditLoad.current) {
+          setEquipoAsignado(serv.nombre);
           if (clienteId) {
             const precioDinamico = StorageService.obtenerPrecioAcordado(clienteId, servicioId);
             setPrecioPorHora(precioDinamico);
           } else {
             setPrecioPorHora(serv.precioBase);
           }
-        } else {
-          // Desactivar bandera de carga inicial para cambios futuros del usuario
-          isInitialEditLoad.current = false;
         }
       }
+      // Siempre desactivar el flag al terminar, independientemente de si serv existe
+      isInitialEditLoad.current = false;
     }
-  }, [servicioId, clienteId, servicios]);
+  }, [servicioId, clienteId, servicios, empleados]);
 
   // Cálculo de Horas por Turno
   const calcularHorasTurno = (inicio: string, fin: string): number => {
@@ -160,7 +211,7 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
   const horasNoche = calcularHorasTurno(nocheInicio, nocheFin);
   const subtotalHorasCalculado = horasManana + horasTarde + horasNoche;
 
-  // Actualizar automáticamente totalHorasPagar cuando subtotal cambia (si no fue modificado manualmente a 0)
+  // Actualizar automáticamente totalHorasPagar cuando subtotal cambia (solo en modo nuevo)
   useEffect(() => {
     if (!conduceExistente && subtotalHorasCalculado > 0) {
       setTotalHorasPagar(subtotalHorasCalculado);
@@ -214,7 +265,7 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
       clienteNombre: clienteObj ? clienteObj.nombre : 'Cliente Desconocido',
       direccionProyecto,
       telefonoContacto,
-      servicioId,
+      servicioId: servicioId.startsWith('emp-veh-') ? '' : servicioId,
       equipoAsignado,
       placa: placa.trim() || undefined,
       turnoManana: horasManana > 0 ? { inicio: mananaInicio, fin: mananaFin, horas: horasManana } : undefined,
@@ -280,7 +331,7 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
                 value={numeroConduce}
                 onChange={(e) => setNumeroConduce(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-mono font-bold focus:border-amber-500"
-                placeholder="EP-00100"
+                placeholder="EP-00101"
               />
             </div>
 
@@ -349,11 +400,24 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:border-amber-500"
               >
                 <option value="">-- Seleccionar Equipo --</option>
-                {serviciosEquipos.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.nombre} (${s.precioBase.toLocaleString('es-DO')}/hr base)
-                  </option>
-                ))}
+                {serviciosEquipos.length > 0 && (
+                  <optgroup label="Catálogo de Servicios">
+                    {serviciosEquipos.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.nombre} (${s.precioBase.toLocaleString('es-DO')}/hr base)
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {vehiculosDeEmpleados.length > 0 && (
+                  <optgroup label="Equipos/Vehículos Asignados a Operadores">
+                    {vehiculosDeEmpleados.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.nombre}{v.placa ? ` — Placa: ${v.placa}` : ''}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
             </div>
 

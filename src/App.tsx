@@ -179,6 +179,26 @@ export default function App() {
     StorageService.savePreciosCliente(copia);
   };
 
+  // Guardar Empleado (nuevo o edición)
+  const handleSaveEmpleado = (emp: Empleado) => {
+    const copia = [...empleados];
+    const idx = copia.findIndex((e) => e.id === emp.id);
+    if (idx >= 0) {
+      copia[idx] = emp;
+    } else {
+      copia.push(emp);
+    }
+    setEmpleados(copia);
+    StorageService.saveEmpleados(copia);
+  };
+
+  // Eliminar Empleado
+  const handleDeleteEmpleado = (id: string) => {
+    const copia = empleados.filter((e) => e.id !== id);
+    setEmpleados(copia);
+    StorageService.saveEmpleados(copia);
+  };
+
   // Manejadores Gasoil
   const handleSaveConfigGasoil = (cfg: ConfiguracionGasoil) => {
     setConfigGasoil(cfg);
@@ -307,6 +327,7 @@ export default function App() {
               clientes={clientes}
               servicios={servicios}
               empleados={empleados}
+              conduces={conduces}
               conduceExistente={conduceEnEdicion?.tipo === 'equipo_pesado' ? (conduceEnEdicion as ConduceEquipoPesado) : null}
               onSave={handleSaveConduceEquipo}
               onCancel={() => {
@@ -321,6 +342,7 @@ export default function App() {
               clientes={clientes}
               servicios={servicios}
               empleados={empleados}
+              conduces={conduces}
               conduceExistente={conduceEnEdicion?.tipo === 'materiales' ? (conduceEnEdicion as ConduceMaterial) : null}
               onSave={handleSaveConduceMaterial}
               onCancel={() => {
@@ -370,11 +392,14 @@ export default function App() {
             <ServiciosPreciosManager
               servicios={servicios}
               clientes={clientes}
+              empleados={empleados}
               preciosCliente={preciosCliente}
               onSaveServicio={handleSaveServicio}
               onSaveCliente={handleSaveCliente}
               onSavePrecioCliente={handleSavePrecioCliente}
               onDeletePrecioCliente={handleDeletePrecioCliente}
+              onSaveEmpleado={handleSaveEmpleado}
+              onDeleteEmpleado={handleDeleteEmpleado}
             />
           )}
 
