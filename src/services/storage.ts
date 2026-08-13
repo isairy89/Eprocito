@@ -21,17 +21,27 @@ const KEYS = {
   CONDUCES: 'equiproci_conduces'
 };
 
+// Registro de claves que sufrieron error de lectura o corrupción
+const corruptedKeys = new Set<string>();
+
+export interface StorageStatus {
+  hasError: boolean;
+  corruptedKeys: string[];
+}
+
 function getItem<T>(key: string, defaultValue: T): T {
   let rawData: string | null = null;
   try {
     rawData = localStorage.getItem(key);
   } catch (err) {
     console.error(`Error al acceder a localStorage para ${key}:`, err);
+    corruptedKeys.add(key);
     return (Array.isArray(defaultValue) ? [] : {}) as unknown as T;
   }
 
-  // CASO A: Primera instalación (clave no existe)
+  // CASO A: Primera instalación (clave no existe en localStorage)
   if (rawData === null) {
+    corruptedKeys.delete(key);
     try {
       localStorage.setItem(key, JSON.stringify(defaultValue));
     } catch (e) {
@@ -42,17 +52,25 @@ function getItem<T>(key: string, defaultValue: T): T {
 
   // CASO B: Clave existe -> Intentar parsear
   try {
-    return JSON.parse(rawData) as T;
+    const parsed = JSON.parse(rawData);
+    corruptedKeys.delete(key); // Lectura y parseo exitosos
+    return parsed as T;
   } catch (parseErr) {
-    // CASO C: Error al parsear datos existentes
-    // CRÍTICO: NO retornar defaultValue (initialData) para evitar reemplazar
-    // datos reales por la plantilla inicial. Tampoco sobrescribir localStorage.
-    console.error(`Error de parseo JSON en ${key}. Se conservan los datos de localStorage sin sobrescribir:`, parseErr);
+    // CASO C: Error al parsear datos existentes que SÍ están en localStorage
+    console.error(`Error de parseo JSON en '${key}'. Se marca como corrupta para bloquear sobrescritura y preservar los datos originales:`, parseErr);
+    corruptedKeys.add(key);
     return (Array.isArray(defaultValue) ? [] : {}) as unknown as T;
   }
 }
 
 function setItem<T>(key: string, value: T): boolean {
+  // CRÍTICO: Si la clave está en estado de error/corrupción, BLOQUEAR la escritura
+  // para evitar que el estado en memoria [] o {} sobrescriba el contenido original en disk.
+  if (corruptedKeys.has(key)) {
+    console.error(`[SEGURIDAD DE ALMACENAMIENTO] Escritura bloqueada para '${key}'. Los datos persistidos sufrieron un error de lectura y no serán sobrescritos.`);
+    return false;
+  }
+
   try {
     localStorage.setItem(key, JSON.stringify(value));
     return true;
@@ -119,10 +137,19 @@ export class StorageService {
 
   // Reset a datos de fábrica
   static resetToDefault(): void {
+    corruptedKeys.clear();
     setItem(KEYS.CLIENTES, CLIENTES_INICIALES);
     setItem(KEYS.SERVICIOS, SERVICIOS_INICIALES);
     setItem(KEYS.PRECIOS_CLIENTE, PRECIOS_CLIENTE_INICIALES);
     setItem(KEYS.EMPLEADOS, EMPLEADOS_INICIALES);
     setItem(KEYS.CONDUCES, CONDUCES_INICIALES);
+  }
+
+  // Estado global de salud de lectura
+  static getStorageStatus(): StorageStatus {
+    return {
+      hasError: corruptedKeys.size > 0,
+      corruptedKeys: Array.from(corruptedKeys)
+    };
   }
 }

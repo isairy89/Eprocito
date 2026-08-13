@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 import {
   Cliente,
   Servicio,
@@ -8,7 +9,7 @@ import {
   ConduceEquipoPesado,
   ConduceMaterial
 } from './types';
-import { StorageService } from './services/storage';
+import { StorageService, StorageStatus } from './services/storage';
 import { Header } from './components/Header';
 import { Sidebar, TabType } from './components/Sidebar';
 import { ProduccionDashboard } from './components/ProduccionDashboard';
@@ -29,6 +30,9 @@ export default function App() {
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [conduces, setConduces] = useState<Conduce[]>([]);
 
+  // Estado de error de almacenamiento
+  const [storageError, setStorageError] = useState<StorageStatus | null>(null);
+
   // Conduce en edición
   const [conduceEnEdicion, setConduceEnEdicion] = useState<Conduce | null>(null);
 
@@ -43,6 +47,13 @@ export default function App() {
     setPreciosCliente(StorageService.getPreciosCliente());
     setEmpleados(StorageService.getEmpleados());
     setConduces(StorageService.getConduces());
+
+    const status = StorageService.getStorageStatus();
+    if (status.hasError) {
+      setStorageError(status);
+    } else {
+      setStorageError(null);
+    }
   };
 
   // Restablecer datos a demo
@@ -177,6 +188,32 @@ export default function App() {
 
         {/* Content View Area */}
         <main className="flex-1 p-6 max-w-7xl mx-auto w-full overflow-y-auto">
+          
+          {storageError && storageError.hasError && (
+            <div className="bg-amber-950/80 border border-amber-500/60 text-amber-100 p-4 rounded-xl mb-6 shadow-xl backdrop-blur flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-bold text-amber-200 text-sm md:text-base">
+                    Advertencia de Almacenamiento: Registros Ilegibles Detectados
+                  </h4>
+                  <p className="text-xs md:text-sm text-amber-200/80 mt-1">
+                    Se encontraron claves de almacenamiento con formato no válido ({storageError.corruptedKeys.join(', ')}). 
+                    Para prevenir la destrucción de la información original, <span className="font-semibold text-amber-100 underline">se ha bloqueado la sobrescritura en almacenamiento</span>. Sus datos guardados no han sido borrados.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+                <button
+                  onClick={cargarDatos}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs rounded-lg transition shadow"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Reintentar
+                </button>
+              </div>
+            </div>
+          )}
           
           {activeTab === 'produccion' && (
             <ProduccionDashboard
