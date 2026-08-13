@@ -145,3 +145,86 @@ export interface FiltrosReporte {
   servicioId?: string;
 }
 
+// ==========================================
+// MÓDULO DE CONTROL DE GASOIL / COMBUSTIBLE
+// ==========================================
+
+export interface ConfiguracionGasoil {
+  existenciaInicialGalones: number; // Por defecto 1000
+}
+
+export interface CompraGasoil {
+  id: string;
+  fecha: string; // YYYY-MM-DD
+  proveedor: string;
+  facturaODocumento?: string;
+  numeroReferencia?: string;
+  galones: number;
+  precioPorGalon: number;
+  montoTotal: number; // galones * precioPorGalon
+  observaciones?: string;
+  creadoEn: string;
+  actualizadoEn?: string;
+}
+
+export interface DespachoGasoil {
+  id: string;
+  fecha: string; // YYYY-MM-DD
+  hora?: string; // HH:MM
+  equipoOVehiculo: string; // Nombre del equipo o vehículo
+  placa?: string;
+  operadorOChofer?: string;
+  galones: number;
+  autorizadoPor: string;
+  entregadoPor: string;
+  horometro?: number; // Para equipo pesado (horas)
+  kilometraje?: number; // Para vehículos/camiones (km)
+  conduceId?: string; // ID del conduce relacionado si aplica
+  conduceNumero?: string; // ej: "EP-00101" o "E-00501"
+  actividadOTrabajo?: string; // ej: "Excavación Av. Ecológica", "Mantenimiento", "Traslado interno"
+  observaciones?: string;
+  creadoEn: string;
+  actualizadoEn?: string;
+}
+
+export interface ConteoFisicoGasoil {
+  id: string;
+  fecha: string; // YYYY-MM-DD
+  existenciaTeoricaGalones: number;
+  existenciaFisicaGalones: number;
+  diferenciaGalones: number; // existenciaFisicaGalones - existenciaTeoricaGalones
+  responsable: string;
+  observaciones?: string;
+  creadoEn: string;
+}
+
+export type TipoInconsistenciaGasoil =
+  | 'sin_actividad'
+  | 'multiples_despachos'
+  | 'horometro_inconsistente'
+  | 'kilometraje_inconsistente'
+  | 'saldo_insuficiente'
+  | 'diferencia_inventario';
+
+export interface AlertaGasoil {
+  id: string;
+  tipo: TipoInconsistenciaGasoil;
+  nivel: 'advertencia' | 'critico';
+  titulo: string;
+  descripcion: string;
+  fecha: string;
+  equipoOVehiculo?: string;
+  placa?: string;
+  despachoId?: string;
+  conteoId?: string;
+}
+
+export interface FiltrosGasoil {
+  fechaInicio: string;
+  fechaFin: string;
+  equipoPlaca: string; // '' para todos
+  operadorChofer: string; // '' para todos
+  tipoMovimiento: 'todos' | 'compras' | 'despachos' | 'conteos';
+  estadoRevision: 'todos' | 'solo_alertas';
+}
+

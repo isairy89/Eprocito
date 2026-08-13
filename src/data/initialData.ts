@@ -238,3 +238,142 @@ export const CONDUCES_INICIALES: Conduce[] = [
     actualizadoEn: '2026-08-12T11:00:00Z'
   }
 ];
+
+// ==========================================
+// DATOS INICIALES MÓDULO DE GASOIL
+// ==========================================
+
+export const CONFIGURACION_GASOIL_INICIAL = {
+  existenciaInicialGalones: 1000
+};
+
+export const COMPRAS_GASOIL_INICIALES = [
+  {
+    id: 'comp-1',
+    fecha: '2026-08-08',
+    proveedor: 'Refidomsa / Distribuidora Dominicana de Combustibles',
+    facturaODocumento: 'FAC-90821',
+    numeroReferencia: 'REF-2026-08',
+    galones: 500,
+    precioPorGalon: 210,
+    montoTotal: 105000,
+    observaciones: 'Compra en cisterna principal para abastecimiento semanal de patio',
+    creadoEn: '2026-08-08T09:00:00Z'
+  }
+];
+
+export const DESPACHOS_GASOIL_INICIALES = [
+  {
+    id: 'desp-1',
+    fecha: '2026-08-10',
+    hora: '07:15',
+    equipoOVehiculo: 'Retroexcavadora CAT 320 (#01)',
+    placa: 'EQUIP-01',
+    operadorOChofer: 'Carlos Manuel Rodríguez',
+    galones: 30,
+    autorizadoPor: 'Ing. Fernando Alcántara',
+    entregadoPor: 'Miguel Torres',
+    horometro: 1250,
+    conduceId: 'cond-101',
+    conduceNumero: 'EP-00101',
+    actividadOTrabajo: 'Excavación para cimentación en Av. Ecológica',
+    observaciones: 'Despacho al iniciar turno de la mañana',
+    creadoEn: '2026-08-10T07:15:00Z'
+  },
+  {
+    id: 'desp-2',
+    fecha: '2026-08-10',
+    hora: '07:30',
+    equipoOVehiculo: 'Camión Mack 14m³',
+    placa: 'L-394810',
+    operadorOChofer: 'Ramón Emilio González',
+    galones: 25,
+    autorizadoPor: 'Ing. Fernando Alcántara',
+    entregadoPor: 'Miguel Torres',
+    kilometraje: 84500,
+    conduceId: 'cond-201',
+    conduceNumero: 'E-00501',
+    actividadOTrabajo: 'Acarreo de sub-base a Av. Ecológica',
+    observaciones: 'Tanque lleno previo a viajes',
+    creadoEn: '2026-08-10T07:30:00Z'
+  },
+  {
+    id: 'desp-3',
+    fecha: '2026-08-11',
+    hora: '08:00',
+    equipoOVehiculo: 'Pala Cargadora CAT 950 (#02)',
+    placa: 'EQUIP-02',
+    operadorOChofer: 'Juan Antonio Pérez',
+    galones: 35,
+    autorizadoPor: 'Lic. Claudia Fernández',
+    entregadoPor: 'Santo Reyes Guzmán',
+    horometro: 3100,
+    conduceId: 'cond-102',
+    conduceNumero: 'EP-00102',
+    actividadOTrabajo: 'Carga de material de mina en Baní',
+    observaciones: 'Despacho en mina',
+    creadoEn: '2026-08-11T08:00:00Z'
+  },
+  {
+    id: 'desp-4',
+    fecha: '2026-08-12',
+    hora: '07:45',
+    equipoOVehiculo: 'Camión International 16m³',
+    placa: 'L-291048',
+    operadorOChofer: 'José Luis Almonte',
+    galones: 28,
+    autorizadoPor: 'Lidia Rosario',
+    entregadoPor: 'Miguel Torres',
+    kilometraje: 62100,
+    conduceId: 'cond-202',
+    conduceNumero: 'E-00502',
+    actividadOTrabajo: 'Transporte arena de pañete Torre Horizon',
+    observaciones: 'Suministro matutino',
+    creadoEn: '2026-08-12T07:45:00Z'
+  },
+  {
+    id: 'desp-5',
+    fecha: '2026-08-13',
+    hora: '09:00',
+    equipoOVehiculo: 'Camión Mack 14m³',
+    placa: 'L-394810',
+    operadorOChofer: 'Ramón Emilio González',
+    galones: 25,
+    autorizadoPor: 'Lidia Rosario',
+    entregadoPor: 'Miguel Torres',
+    kilometraje: 84620,
+    conduceNumero: '',
+    actividadOTrabajo: 'Traslado interno y movimiento en patio',
+    observaciones: 'Sin conduce de cliente emitido para esa fecha (Movimiento operativo en patio)',
+    creadoEn: '2026-08-13T09:00:00Z'
+  },
+  {
+    id: 'desp-6',
+    fecha: '2026-08-13',
+    hora: '14:30',
+    equipoOVehiculo: 'Camión Mack 14m³',
+    placa: 'L-394810',
+    operadorOChofer: 'Ramón Emilio González',
+    galones: 20,
+    autorizadoPor: 'Lidia Rosario',
+    entregadoPor: 'Miguel Torres',
+    kilometraje: 84680,
+    conduceNumero: '',
+    actividadOTrabajo: 'Recarga para viaje extraordinario de apoyo',
+    observaciones: 'Segundo despacho del mismo día',
+    creadoEn: '2026-08-13T14:30:00Z'
+  }
+];
+
+export const CONTEOS_GASOIL_INICIALES = [
+  {
+    id: 'cont-1',
+    fecha: '2026-08-13',
+    existenciaTeoricaGalones: 1337,
+    existenciaFisicaGalones: 1320,
+    diferenciaGalones: -17,
+    responsable: 'Miguel Torres',
+    observaciones: 'Conteo físico en tanque de patio con vara graduada. Ligera merma normal por sedimentación y calibración.',
+    creadoEn: '2026-08-13T16:00:00Z'
+  }
+];

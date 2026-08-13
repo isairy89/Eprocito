@@ -3,14 +3,22 @@ import {
   Servicio,
   PrecioCliente,
   Empleado,
-  Conduce
+  Conduce,
+  ConfiguracionGasoil,
+  CompraGasoil,
+  DespachoGasoil,
+  ConteoFisicoGasoil
 } from '../types';
 import {
   CLIENTES_INICIALES,
   SERVICIOS_INICIALES,
   PRECIOS_CLIENTE_INICIALES,
   EMPLEADOS_INICIALES,
-  CONDUCES_INICIALES
+  CONDUCES_INICIALES,
+  CONFIGURACION_GASOIL_INICIAL,
+  COMPRAS_GASOIL_INICIALES,
+  DESPACHOS_GASOIL_INICIALES,
+  CONTEOS_GASOIL_INICIALES
 } from '../data/initialData';
 
 const KEYS = {
@@ -18,7 +26,11 @@ const KEYS = {
   SERVICIOS: 'equiproci_servicios',
   PRECIOS_CLIENTE: 'equiproci_precios_cliente',
   EMPLEADOS: 'equiproci_empleados',
-  CONDUCES: 'equiproci_conduces'
+  CONDUCES: 'equiproci_conduces',
+  GASOIL_CONFIG: 'equiproci_gasoil_config',
+  GASOIL_COMPRAS: 'equiproci_gasoil_compras',
+  GASOIL_DESPACHOS: 'equiproci_gasoil_despachos',
+  GASOIL_CONTEOS: 'equiproci_gasoil_conteos'
 };
 
 // Registro de claves que sufrieron error de lectura o corrupción
@@ -121,6 +133,38 @@ export class StorageService {
     setItem(KEYS.CONDUCES, conduces);
   }
 
+  // ==========================================
+  // METODOS MÓDULO DE CONTROL DE GASOIL
+  // ==========================================
+
+  static getConfiguracionGasoil(): ConfiguracionGasoil {
+    return getItem(KEYS.GASOIL_CONFIG, CONFIGURACION_GASOIL_INICIAL);
+  }
+  static saveConfiguracionGasoil(config: ConfiguracionGasoil): void {
+    setItem(KEYS.GASOIL_CONFIG, config);
+  }
+
+  static getComprasGasoil(): CompraGasoil[] {
+    return getItem(KEYS.GASOIL_COMPRAS, COMPRAS_GASOIL_INICIALES);
+  }
+  static saveComprasGasoil(compras: CompraGasoil[]): void {
+    setItem(KEYS.GASOIL_COMPRAS, compras);
+  }
+
+  static getDespachosGasoil(): DespachoGasoil[] {
+    return getItem(KEYS.GASOIL_DESPACHOS, DESPACHOS_GASOIL_INICIALES);
+  }
+  static saveDespachosGasoil(despachos: DespachoGasoil[]): void {
+    setItem(KEYS.GASOIL_DESPACHOS, despachos);
+  }
+
+  static getConteosGasoil(): ConteoFisicoGasoil[] {
+    return getItem(KEYS.GASOIL_CONTEOS, CONTEOS_GASOIL_INICIALES);
+  }
+  static saveConteosGasoil(conteos: ConteoFisicoGasoil[]): void {
+    setItem(KEYS.GASOIL_CONTEOS, conteos);
+  }
+
   // Helper de Precio Dinámico
   static obtenerPrecioAcordado(clienteId: string, servicioId: string): number {
     const preciosCliente = this.getPreciosCliente();
@@ -143,6 +187,10 @@ export class StorageService {
     setItem(KEYS.PRECIOS_CLIENTE, PRECIOS_CLIENTE_INICIALES);
     setItem(KEYS.EMPLEADOS, EMPLEADOS_INICIALES);
     setItem(KEYS.CONDUCES, CONDUCES_INICIALES);
+    setItem(KEYS.GASOIL_CONFIG, CONFIGURACION_GASOIL_INICIAL);
+    setItem(KEYS.GASOIL_COMPRAS, COMPRAS_GASOIL_INICIALES);
+    setItem(KEYS.GASOIL_DESPACHOS, DESPACHOS_GASOIL_INICIALES);
+    setItem(KEYS.GASOIL_CONTEOS, CONTEOS_GASOIL_INICIALES);
   }
 
   // Estado global de salud de lectura

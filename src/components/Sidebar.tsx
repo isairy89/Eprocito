@@ -8,7 +8,8 @@ import {
   Users,
   Briefcase,
   AlertTriangle,
-  PlusCircle
+  PlusCircle,
+  Fuel
 } from 'lucide-react';
 
 export type TabType =
@@ -16,6 +17,7 @@ export type TabType =
   | 'registro_equipos'
   | 'registro_materiales'
   | 'conduces_lista'
+  | 'control_gasoil'
   | 'servicios_precios'
   | 'reporte_clientes'
   | 'reporte_nomina';
@@ -40,6 +42,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, total
       icon: FileText,
       desc: 'Consulta y correcciones',
       badge: totalConduces
+    },
+    {
+      id: 'control_gasoil' as TabType,
+      label: 'Control de Gasoil',
+      icon: Fuel,
+      desc: 'Inventario, despachos y alertas'
     }
   ];
 

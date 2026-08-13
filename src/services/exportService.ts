@@ -1,7 +1,16 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Conduce, FiltrosReporte } from '../types';
+import {
+  Conduce,
+  FiltrosReporte,
+  CompraGasoil,
+  DespachoGasoil,
+  ConteoFisicoGasoil,
+  AlertaGasoil,
+  FiltrosGasoil
+} from '../types';
+import { ResumenGasoil } from './gasoilService';
 
 export interface ReporteClienteFila {
   fecha: string;
@@ -420,5 +429,223 @@ export class ExportService {
     });
 
     doc.save(`EQUIPROCI_Reporte_Nomina_${new Date().toISOString().slice(0, 10)}.pdf`);
+  }
+
+  // ==========================================
+  // EXPORTACIONES MÓDULO CONTROL DE GASOIL
+  // ==========================================
+
+  /**
+   * Exporta a Excel los datos del Módulo de Combustible / Gasoil
+   */
+  static exportarGasoilExcel(
+    compras: CompraGasoil[],
+    despachos: DespachoGasoil[],
+    conteos: ConteoFisicoGasoil[],
+    resumen: ResumenGasoil,
+    filtros: FiltrosGasoil
+  ): void {
+    const wb = XLSX.utils.book_new();
+
+    // Hoja 1: Resumen de Inventario
+    const dataResumen = [
+      { Concepto: 'Existencia Inicial', Galones: resumen.existenciaInicialGalones, 'Monto RD$': '-' },
+      { Concepto: 'Total Comprado', Galones: resumen.totalCompradoGalones, 'Monto RD$': resumen.totalMontoCompras },
+      { Concepto: 'Total Despachado', Galones: resumen.totalDespachadoGalones, 'Monto RD$': '-' },
+      { Concepto: 'Ajuste Acumulado Conteo Físico', Galones: resumen.totalAjustesDiferenciaGalones, 'Monto RD$': '-' },
+      { Concepto: 'SALDO DISPONIBLE ACTUAL', Galones: resumen.saldoDisponibleGalones, 'Monto RD$': '-' }
+    ];
+    const wsResumen = XLSX.utils.json_to_sheet(dataResumen);
+    XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen Inventario');
+
+    // Hoja 2: Despachos de Combustible
+    const dataDespachos = despachos.map((d) => ({
+      Fecha: d.fecha,
+      Hora: d.hora || '-',
+      'Equipo / Vehículo': d.equipoOVehiculo,
+      Placa: d.placa || '-',
+      'Operador / Chofer': d.operadorOChofer || '-',
+      'Galones Despachados': d.galones,
+      'Horómetro (hrs)': d.horometro ?? '-',
+      'Kilometraje (km)': d.kilometraje ?? '-',
+      'No. Conduce': d.conduceNumero || 'Sin Conduce',
+      'Actividad / Trabajo': d.actividadOTrabajo || '-',
+      'Autorizado Por': d.autorizadoPor,
+      'Entregado Por': d.entregadoPor,
+      Observaciones: d.observaciones || ''
+    }));
+    const wsDespachos = XLSX.utils.json_to_sheet(dataDespachos);
+    XLSX.utils.book_append_sheet(wb, wsDespachos, 'Despachos de Gasoil');
+
+    // Hoja 3: Compras de Combustible
+    const dataCompras = compras.map((c) => ({
+      Fecha: c.fecha,
+      Proveedor: c.proveedor,
+      'Factura / Doc': c.facturaODocumento || '-',
+      Referencia: c.numeroReferencia || '-',
+      Galones: c.galones,
+      'Precio/Galón ($)': c.precioPorGalon,
+      'Monto Total ($)': c.montoTotal,
+      Observaciones: c.observaciones || ''
+    }));
+    const wsCompras = XLSX.utils.json_to_sheet(dataCompras);
+    XLSX.utils.book_append_sheet(wb, wsCompras, 'Compras de Gasoil');
+
+    // Hoja 4: Conteos Físicos de Tanque
+    const dataConteos = conteos.map((c) => ({
+      Fecha: c.fecha,
+      'Existencia Teórica (Gal)': c.existenciaTeoricaGalones,
+      'Existencia Física (Gal)': c.existenciaFisicaGalones,
+      'Diferencia (Gal)': c.diferenciaGalones,
+      Responsable: c.responsable,
+      Observaciones: c.observaciones || ''
+    }));
+    const wsConteos = XLSX.utils.json_to_sheet(dataConteos);
+    XLSX.utils.book_append_sheet(wb, wsConteos, 'Conteos Físicos');
+
+    XLSX.writeFile(wb, `EQUIPROCI_Control_Gasoil_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
+  /**
+   * Exporta a PDF el Reporte del Módulo de Combustible / Gasoil
+   */
+  static exportarGasoilPDF(
+    compras: CompraGasoil[],
+    despachos: DespachoGasoil[],
+    conteos: ConteoFisicoGasoil[],
+    resumen: ResumenGasoil,
+    alertas: AlertaGasoil[],
+    filtros: FiltrosGasoil
+  ): void {
+    const doc = new jsPDF('landscape', 'mm', 'a4');
+
+    // Header principal
+    doc.setFontSize(14);
+    doc.setTextColor(20, 40, 80);
+    doc.text('EQUIPOS Y PROYECTOS CIVILES, S.R.L. (EQUIPROCI)', 14, 12);
+    doc.setFontSize(11);
+    doc.text('Módulo de Control de Combustible (Gasoil) - Trazabilidad y Auditoría', 14, 18);
+
+    doc.setFontSize(8);
+    doc.setTextColor(60, 60, 60);
+    const rangoTexto =
+      filtros.fechaInicio || filtros.fechaFin
+        ? `${filtros.fechaInicio || 'Inicio'} al ${filtros.fechaFin || 'Hoy'}`
+        : 'Todos los periodos';
+    const equipoTexto = filtros.equipoPlaca ? filtros.equipoPlaca : 'Todos los equipos';
+    const opTexto = filtros.operadorChofer ? filtros.operadorChofer : 'Todos';
+
+    doc.text(
+      `FILTROS -> Rango: ${rangoTexto} | Equipo/Placa: ${equipoTexto} | Chofer/Op: ${opTexto} | Inconsistencias registradas: ${alertas.length}`,
+      14,
+      23
+    );
+
+    // Resumen de cajas pequeñas
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Existencia Inicial: ${resumen.existenciaInicialGalones} gal`, 14, 29);
+    doc.text(`+ Comprado: ${resumen.totalCompradoGalones} gal ($${resumen.totalMontoCompras.toLocaleString('es-DO')})`, 75, 29);
+    doc.text(`- Despachado: ${resumen.totalDespachadoGalones} gal`, 150, 29);
+    doc.text(`= SALDO DISPONIBLE: ${resumen.saldoDisponibleGalones} gal`, 215, 29);
+
+    // Tabla 1: Despachos
+    doc.setFontSize(10);
+    doc.setTextColor(20, 40, 80);
+    doc.text('Despachos a Equipos y Vehículos', 14, 37);
+
+    const headDespachos = [
+      ['Fecha', 'Hora', 'Equipo / Vehículo', 'Placa', 'Chofer/Operador', 'Galones', 'Lectura', 'Conduce', 'Autorizado', 'Entregado']
+    ];
+
+    const bodyDespachos = despachos.map((d) => [
+      d.fecha,
+      d.hora || '-',
+      d.equipoOVehiculo,
+      d.placa || '-',
+      d.operadorOChofer || '-',
+      `${d.galones} gal`,
+      d.horometro ? `${d.horometro} hrs` : d.kilometraje ? `${d.kilometraje} km` : '-',
+      d.conduceNumero || 'Sin Conduce',
+      d.autorizadoPor,
+      d.entregadoPor
+    ]);
+
+    autoTable(doc, {
+      startY: 40,
+      head: headDespachos,
+      body: bodyDespachos,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [217, 119, 6], textColor: [255, 255, 255], fontStyle: 'bold' },
+      theme: 'grid'
+    });
+
+    let currentY = (doc as any).lastAutoTable.finalY + 8;
+
+    // Tabla 2: Alertas / Inconsistencias (si existen)
+    if (alertas.length > 0) {
+      if (currentY > 170) {
+        doc.addPage();
+        currentY = 15;
+      }
+
+      doc.setFontSize(10);
+      doc.setTextColor(180, 40, 40);
+      doc.text(`Movimientos e Inconsistencias para Revisión (${alertas.length})`, 14, currentY);
+
+      const headAlertas = [['Fecha', 'Tipo', 'Nivel', 'Equipo/Placa', 'Descripción de la Inconsistencia']];
+      const bodyAlertas = alertas.map((a) => [
+        a.fecha,
+        a.titulo,
+        a.nivel === 'critico' ? '🚨 Crítico' : '⚠️ Advertencia',
+        a.equipoOVehiculo || a.placa || '-',
+        a.descripcion
+      ]);
+
+      autoTable(doc, {
+        startY: currentY + 3,
+        head: headAlertas,
+        body: bodyAlertas,
+        styles: { fontSize: 7.5, cellPadding: 2 },
+        headStyles: { fillColor: [180, 50, 50], textColor: [255, 255, 255], fontStyle: 'bold' },
+        theme: 'grid'
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 8;
+    }
+
+    // Tabla 3: Compras de combustible
+    if (compras.length > 0) {
+      if (currentY > 170) {
+        doc.addPage();
+        currentY = 15;
+      }
+
+      doc.setFontSize(10);
+      doc.setTextColor(20, 40, 80);
+      doc.text('Registro de Compras de Combustible', 14, currentY);
+
+      const headCompras = [['Fecha', 'Proveedor', 'Factura/Doc', 'Referencia', 'Galones', 'Precio/Gal ($)', 'Monto Total ($)']];
+      const bodyCompras = compras.map((c) => [
+        c.fecha,
+        c.proveedor,
+        c.facturaODocumento || '-',
+        c.numeroReferencia || '-',
+        `${c.galones} gal`,
+        `$${c.precioPorGalon.toLocaleString('es-DO')}`,
+        `$${c.montoTotal.toLocaleString('es-DO')}`
+      ]);
+
+      autoTable(doc, {
+        startY: currentY + 3,
+        head: headCompras,
+        body: bodyCompras,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [30, 80, 140], textColor: [255, 255, 255], fontStyle: 'bold' },
+        theme: 'grid'
+      });
+    }
+
+    doc.save(`EQUIPROCI_Control_Gasoil_${new Date().toISOString().slice(0, 10)}.pdf`);
   }
 }

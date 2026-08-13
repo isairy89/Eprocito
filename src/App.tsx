@@ -7,7 +7,11 @@ import {
   Empleado,
   Conduce,
   ConduceEquipoPesado,
-  ConduceMaterial
+  ConduceMaterial,
+  ConfiguracionGasoil,
+  CompraGasoil,
+  DespachoGasoil,
+  ConteoFisicoGasoil
 } from './types';
 import { StorageService, StorageStatus } from './services/storage';
 import { Header } from './components/Header';
@@ -19,6 +23,7 @@ import { ConducesList } from './components/ConducesList';
 import { ServiciosPreciosManager } from './components/ServiciosPreciosManager';
 import { ReporteClientes } from './components/ReporteClientes';
 import { ReporteNomina } from './components/ReporteNomina';
+import { ControlGasoilManager } from './components/ControlGasoilManager';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('produccion');
@@ -29,6 +34,12 @@ export default function App() {
   const [preciosCliente, setPreciosCliente] = useState<PrecioCliente[]>([]);
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [conduces, setConduces] = useState<Conduce[]>([]);
+
+  // Estados Módulo Gasoil
+  const [configGasoil, setConfigGasoil] = useState<ConfiguracionGasoil>({ existenciaInicialGalones: 1000 });
+  const [comprasGasoil, setComprasGasoil] = useState<CompraGasoil[]>([]);
+  const [despachosGasoil, setDespachosGasoil] = useState<DespachoGasoil[]>([]);
+  const [conteosGasoil, setConteosGasoil] = useState<ConteoFisicoGasoil[]>([]);
 
   // Estado de error de almacenamiento
   const [storageError, setStorageError] = useState<StorageStatus | null>(null);
@@ -47,6 +58,11 @@ export default function App() {
     setPreciosCliente(StorageService.getPreciosCliente());
     setEmpleados(StorageService.getEmpleados());
     setConduces(StorageService.getConduces());
+
+    setConfigGasoil(StorageService.getConfiguracionGasoil());
+    setComprasGasoil(StorageService.getComprasGasoil());
+    setDespachosGasoil(StorageService.getDespachosGasoil());
+    setConteosGasoil(StorageService.getConteosGasoil());
 
     const status = StorageService.getStorageStatus();
     if (status.hasError) {
@@ -163,6 +179,66 @@ export default function App() {
     StorageService.savePreciosCliente(copia);
   };
 
+  // Manejadores Gasoil
+  const handleSaveConfigGasoil = (cfg: ConfiguracionGasoil) => {
+    setConfigGasoil(cfg);
+    StorageService.saveConfiguracionGasoil(cfg);
+  };
+
+  const handleSaveCompraGasoil = (compra: CompraGasoil) => {
+    const copia = [...comprasGasoil];
+    const idx = copia.findIndex((c) => c.id === compra.id);
+    if (idx >= 0) {
+      copia[idx] = compra;
+    } else {
+      copia.unshift(compra);
+    }
+    setComprasGasoil(copia);
+    StorageService.saveComprasGasoil(copia);
+  };
+
+  const handleDeleteCompraGasoil = (id: string) => {
+    const copia = comprasGasoil.filter((c) => c.id !== id);
+    setComprasGasoil(copia);
+    StorageService.saveComprasGasoil(copia);
+  };
+
+  const handleSaveDespachoGasoil = (despacho: DespachoGasoil) => {
+    const copia = [...despachosGasoil];
+    const idx = copia.findIndex((d) => d.id === despacho.id);
+    if (idx >= 0) {
+      copia[idx] = despacho;
+    } else {
+      copia.unshift(despacho);
+    }
+    setDespachosGasoil(copia);
+    StorageService.saveDespachosGasoil(copia);
+  };
+
+  const handleDeleteDespachoGasoil = (id: string) => {
+    const copia = despachosGasoil.filter((d) => d.id !== id);
+    setDespachosGasoil(copia);
+    StorageService.saveDespachosGasoil(copia);
+  };
+
+  const handleSaveConteoGasoil = (conteo: ConteoFisicoGasoil) => {
+    const copia = [...conteosGasoil];
+    const idx = copia.findIndex((c) => c.id === conteo.id);
+    if (idx >= 0) {
+      copia[idx] = conteo;
+    } else {
+      copia.unshift(conteo);
+    }
+    setConteosGasoil(copia);
+    StorageService.saveConteosGasoil(copia);
+  };
+
+  const handleDeleteConteoGasoil = (id: string) => {
+    const copia = conteosGasoil.filter((c) => c.id !== id);
+    setConteosGasoil(copia);
+    StorageService.saveConteosGasoil(copia);
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950">
       
@@ -268,6 +344,25 @@ export default function App() {
                 setConduceEnEdicion(null);
                 setActiveTab('registro_materiales');
               }}
+            />
+          )}
+
+          {activeTab === 'control_gasoil' && (
+            <ControlGasoilManager
+              configGasoil={configGasoil}
+              comprasGasoil={comprasGasoil}
+              despachosGasoil={despachosGasoil}
+              conteosGasoil={conteosGasoil}
+              conduces={conduces}
+              servicios={servicios}
+              empleados={empleados}
+              onSaveConfig={handleSaveConfigGasoil}
+              onSaveCompra={handleSaveCompraGasoil}
+              onDeleteCompra={handleDeleteCompraGasoil}
+              onSaveDespacho={handleSaveDespachoGasoil}
+              onDeleteDespacho={handleDeleteDespachoGasoil}
+              onSaveConteo={handleSaveConteoGasoil}
+              onDeleteConteo={handleDeleteConteoGasoil}
             />
           )}
 
