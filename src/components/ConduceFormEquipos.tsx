@@ -139,7 +139,7 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
       // Generar número consecutivo basado en conduces existentes
       setNumeroConduce(generarSiguienteNumeroEP(conduces));
     }
-  }, [conduceExistente]);
+  }, [conduceExistente, conduces]);
 
   // Al seleccionar cliente, cargar dirección predeterminada y teléfono
   useEffect(() => {

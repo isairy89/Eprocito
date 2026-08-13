@@ -97,7 +97,7 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
       // Generar número consecutivo basado en conduces existentes
       setNumeroConduce(generarSiguienteNumeroE(conduces));
     }
-  }, [conduceExistente]);
+  }, [conduceExistente, conduces]);
 
   // Al cambiar cliente
   useEffect(() => {
