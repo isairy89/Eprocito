@@ -55,7 +55,7 @@ export const ProduccionDashboard: React.FC<ProduccionDashboardProps> = ({
         totalMontoMatenimientoObras += c.montoTotal;
       } else {
         conducesMaterialesCount++;
-        c.detalles.forEach((det) => {
+        (c.detalles || []).forEach((det) => {
           if (det.unidad === 'metro') totalMetros += det.cantidad;
           if (det.unidad === 'viaje') totalViajes += det.cantidad;
           if (det.unidad === 'hora') totalHoras += det.cantidad;
@@ -86,7 +86,7 @@ export const ProduccionDashboard: React.FC<ProduccionDashboardProps> = ({
       if (c.tipo === 'equipo_pesado') {
         actual.horas += c.totalHorasPagar;
       } else {
-        c.detalles.forEach((det) => {
+        (c.detalles || []).forEach((det) => {
           if (det.unidad === 'metro') actual.metros += det.cantidad;
           if (det.unidad === 'viaje') actual.viajes += det.cantidad;
           if (det.unidad === 'hora') actual.horas += det.cantidad;

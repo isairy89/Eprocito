@@ -60,12 +60,12 @@ export class ExportService {
           tipo: 'Equipo Pesado (Por Hora)'
         });
       } else {
-        c.detalles.forEach((det) => {
+        (c.detalles || []).forEach((det) => {
           filas.push({
             fecha: c.fecha,
             numeroConduce: c.numeroConduce,
             clienteNombre: c.clienteNombre,
-            proyecto: c.direccionProyecto,
+            proyecto: c.direccionProyecto || '-',
             itemDetalle: det.material,
             equipoNombre: 'Camión Volteo',
             placa: c.placaCamion || '',
@@ -107,7 +107,7 @@ export class ExportService {
           pagoNomina: 'Pendiente de definir'
         });
       } else {
-        c.detalles.forEach((det) => {
+        (c.detalles || []).forEach((det) => {
           filas.push({
             empleadoNombre: c.choferNombre || 'Sin Asignar',
             equipoNombre: 'Camión Volteo',

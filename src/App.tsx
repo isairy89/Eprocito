@@ -47,11 +47,9 @@ export default function App() {
 
   // Restablecer datos a demo
   const handleResetData = () => {
-    if (window.confirm('¿Está seguro de que desea restablecer los datos de demostración de EQUIPROCI?')) {
-      StorageService.resetToDefault();
-      cargarDatos();
-      setActiveTab('produccion');
-    }
+    StorageService.resetToDefault();
+    cargarDatos();
+    setActiveTab('produccion');
   };
 
   // Guardar Conduce Equipo Pesado

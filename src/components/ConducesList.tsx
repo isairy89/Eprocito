@@ -240,7 +240,7 @@ export const ConducesList: React.FC<ConducesListProps> = ({
 
                       {/* Operador / Chofer */}
                       <td className="p-3 text-slate-300">
-                        {esEquipo ? c.operadorNombre : c.choferNombre}
+                        {esEquipo ? (c.operadorNombre || 'Sin Asignar') : (c.choferNombre || 'Sin Asignar')}
                       </td>
 
                       {/* Cantidad */}
