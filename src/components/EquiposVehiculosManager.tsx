@@ -61,7 +61,7 @@ export const EquiposVehiculosManager: React.FC<EquiposVehiculosManagerProps> = (
       nombre: nombre.trim(),
       tipo,
       placa: placa.trim().toUpperCase(),
-      capacidadM3: capacidadM3 !== '' ? Number(capacidadM3) : undefined,
+      capacidadM3: tipo === 'camion_volteo' && capacidadM3 !== '' && Number(capacidadM3) > 0 ? Number(capacidadM3) : undefined,
       descripcion: descripcion.trim()
     };
 
@@ -251,12 +251,18 @@ export const EquiposVehiculosManager: React.FC<EquiposVehiculosManagerProps> = (
                   <label className="block text-slate-300 mb-1 font-medium">Categoría *</label>
                   <select
                     value={tipo}
-                    onChange={(e) => setTipo(e.target.value as any)}
+                    onChange={(e) => {
+                      const nuevoTipo = e.target.value as any;
+                      setTipo(nuevoTipo);
+                      if (nuevoTipo !== 'camion_volteo') {
+                        setCapacidadM3('');
+                      }
+                    }}
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white outline-none focus:border-amber-500"
                   >
-                    <option value="equipo_pesado">Equipo Pesado (Horas)</option>
-                    <option value="camion_volteo">Camión Volteo (Materiales)</option>
-                    <option value="vehiculo_liviano">Vehículo Liviano / Apoyo</option>
+                    <option value="equipo_pesado">Equipo Pesado (Horas - Cobro por Hora)</option>
+                    <option value="camion_volteo">Camión Volteo (Materiales - Cobro por m³ / Viaje)</option>
+                    <option value="vehiculo_liviano">Vehículo Liviano / Apoyo (N/A)</option>
                   </select>
                 </div>
 
