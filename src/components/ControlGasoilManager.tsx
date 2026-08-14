@@ -90,9 +90,11 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
   // Modales
   const [modalDespachoAbierto, setModalDespachoAbierto] = useState(false);
   const [despachoEditando, setDespachoEditando] = useState<DespachoGasoil | null>(null);
+  const [errorModalDespacho, setErrorModalDespacho] = useState<string | null>(null);
 
   const [modalCompraAbierto, setModalCompraAbierto] = useState(false);
   const [compraEditando, setCompraEditando] = useState<CompraGasoil | null>(null);
+  const [errorModalCompra, setErrorModalCompra] = useState<string | null>(null);
 
   const [modalConteoAbierto, setModalConteoAbierto] = useState(false);
 
@@ -224,6 +226,7 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
   // Manejadores de Formularios
   const handleAbrirNuevoDespacho = () => {
     setDespachoEditando(null);
+    setErrorModalDespacho(null);
     setFormDespacho({
       fecha: new Date().toISOString().split('T')[0],
       hora: new Date().toTimeString().slice(0, 5),
@@ -245,6 +248,7 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
 
   const handleAbrirEditarDespacho = (d: DespachoGasoil) => {
     setDespachoEditando(d);
+    setErrorModalDespacho(null);
     setFormDespacho({ ...d });
     setModalDespachoAbierto(true);
   };
@@ -252,7 +256,7 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
   const handleGuardarDespachoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formDespacho.equipoOVehiculo || !formDespacho.fecha || !formDespacho.galones) {
-      alert('Por favor complete los campos obligatorios: Fecha, Equipo/Vehículo y Galones.');
+      setErrorModalDespacho('Por favor complete los campos obligatorios: Fecha, Equipo/Vehículo y Galones.');
       return;
     }
 
@@ -277,11 +281,13 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
     };
 
     onSaveDespacho(despachoFinal);
+    setErrorModalDespacho(null);
     setModalDespachoAbierto(false);
   };
 
   const handleAbrirNuevaCompra = () => {
     setCompraEditando(null);
+    setErrorModalCompra(null);
     setFormCompra({
       fecha: new Date().toISOString().split('T')[0],
       proveedor: '',
@@ -296,6 +302,7 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
 
   const handleAbrirEditarCompra = (c: CompraGasoil) => {
     setCompraEditando(c);
+    setErrorModalCompra(null);
     setFormCompra({ ...c });
     setModalCompraAbierto(true);
   };
@@ -303,7 +310,7 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
   const handleGuardarCompraSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formCompra.proveedor || !formCompra.fecha || !formCompra.galones) {
-      alert('Por favor complete Fecha, Proveedor y Galones.');
+      setErrorModalCompra('Por favor complete Fecha, Proveedor y Galones.');
       return;
     }
 
@@ -325,6 +332,7 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
     };
 
     onSaveCompra(compraFinal);
+    setErrorModalCompra(null);
     setModalCompraAbierto(false);
   };
 
@@ -1221,6 +1229,14 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
               {despachoEditando ? 'Editar Despacho de Gasoil' : 'Nuevo Despacho a Equipo / Vehículo'}
             </h3>
 
+            {/* Error de validación */}
+            {errorModalDespacho && (
+              <div className="bg-rose-950/80 border border-rose-500/80 p-3 rounded-xl text-rose-100 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+                <span>{errorModalDespacho}</span>
+              </div>
+            )}
+
             {/* Advertencia de Existencia Insuficiente */}
             {Number(formDespacho.galones || 0) > resumen.saldoTeoricoGalones && (
               <div className="bg-rose-950/80 border border-rose-500/80 p-3 rounded-xl text-rose-100 text-xs flex items-center gap-2">
@@ -1455,6 +1471,14 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
               <TrendingUp className="w-5 h-5 text-emerald-400" />
               {compraEditando ? 'Editar Compra de Gasoil' : 'Registrar Compra de Combustible'}
             </h3>
+
+            {/* Error de validación */}
+            {errorModalCompra && (
+              <div className="bg-rose-950/80 border border-rose-500/80 p-3 rounded-xl text-rose-100 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+                <span>{errorModalCompra}</span>
+              </div>
+            )}
 
             <form onSubmit={handleGuardarCompraSubmit} className="space-y-4 text-xs">
               <div>

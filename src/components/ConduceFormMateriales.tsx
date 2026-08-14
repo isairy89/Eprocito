@@ -39,20 +39,20 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
   const [clienteId, setClienteId] = useState<string>('');
   const [direccionProyecto, setDireccionProyecto] = useState<string>('');
   
-  const [capacidadCamionM3, setCapacidadCamionM3] = useState<number>(14);
+  const [capacidadCamionM3, setCapacidadCamionM3] = useState<number>(0);
   const [placaCamion, setPlacaCamion] = useState<string>('');
   const [choferNombre, setChoferNombre] = useState<string>('');
   const [recibidoConforme, setRecibidoConforme] = useState<string>('');
   const [observaciones, setObservaciones] = useState<string>('');
 
-  // Filas de Detalle de Materiales
+  // Filas de Detalle de Materiales (inicia limpio)
   const [detalles, setDetalles] = useState<DetalleMaterialConduce[]>([
     {
-      material: 'Sub-base',
-      cantidad: 28,
+      material: '',
+      cantidad: 0,
       unidad: 'metro',
-      precioUnitario: 650,
-      subtotal: 18200
+      precioUnitario: 0,
+      subtotal: 0
     }
   ]);
 
@@ -69,11 +69,28 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
       setPlacaCamion(conduceExistente.placaCamion);
       setChoferNombre(conduceExistente.choferNombre);
       setRecibidoConforme(conduceExistente.recibidoConforme);
-      setDetalles(conduceExistente.detalles);
+      setDetalles(conduceExistente.detalles && conduceExistente.detalles.length > 0 ? conduceExistente.detalles : [{ material: '', cantidad: 0, unidad: 'metro', precioUnitario: 0, subtotal: 0 }]);
       setObservaciones(conduceExistente.observaciones || '');
     } else {
-      const randomNum = Math.floor(100 + Math.random() * 900);
-      setNumeroConduce(`E-00${randomNum}`);
+      const sigNum = StorageService.generarSiguienteNumeroConduce('materiales');
+      setNumeroConduce(sigNum);
+      setFecha(new Date().toISOString().slice(0, 10));
+      setClienteId('');
+      setDireccionProyecto('');
+      setCapacidadCamionM3(0);
+      setPlacaCamion('');
+      setChoferNombre('');
+      setRecibidoConforme('');
+      setDetalles([
+        {
+          material: '',
+          cantidad: 0,
+          unidad: 'metro',
+          precioUnitario: 0,
+          subtotal: 0
+        }
+      ]);
+      setObservaciones('');
     }
   }, [conduceExistente]);
 
@@ -97,16 +114,16 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
     }
   }, [choferNombre, choferes]);
 
-  // Agregar nueva fila de material
+  // Agregar nueva fila de material limpia
   const agregarFilaMaterial = () => {
     setDetalles([
       ...detalles,
       {
-        material: MATERIALES_ESTANDAR[0],
-        cantidad: 10,
+        material: '',
+        cantidad: 0,
         unidad: 'metro',
-        precioUnitario: 800,
-        subtotal: 10 * 800
+        precioUnitario: 0,
+        subtotal: 0
       }
     ]);
   };
@@ -334,7 +351,9 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
                       type="button"
                       onClick={() => {
                         setPlacaCamion(eq.placa || '');
-                        if (eq.capacidadM3) setCapacidadCamionM3(eq.capacidadM3);
+                        if (eq.capacidadM3 && (!capacidadCamionM3 || capacidadCamionM3 === 0)) {
+                          setCapacidadCamionM3(eq.capacidadM3);
+                        }
                         const emp = empleados.find(
                           (em) => em.placaAsignada === eq.placa || em.vehiculoAsignado === eq.nombre
                         );
@@ -357,8 +376,9 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
               <label className="block text-slate-300 mb-1 font-medium">Capacidad Camión (m³)</label>
               <input
                 type="number"
-                value={capacidadCamionM3}
+                value={capacidadCamionM3 || ''}
                 onChange={(e) => setCapacidadCamionM3(parseFloat(e.target.value) || 0)}
+                placeholder="Ej. 14"
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-mono focus:border-amber-500"
               />
             </div>
@@ -373,7 +393,7 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
                   const val = e.target.value.toUpperCase();
                   setPlacaCamion(val);
                   const match = equipos.find((eq) => eq.placa.toUpperCase() === val);
-                  if (match?.capacidadM3) {
+                  if (match?.capacidadM3 && (!capacidadCamionM3 || capacidadCamionM3 === 0)) {
                     setCapacidadCamionM3(match.capacidadM3);
                   }
                 }}

@@ -123,13 +123,13 @@ export const PRECIOS_CLIENTE_INICIALES: PrecioCliente[] = [
 ];
 
 export const EMPLEADOS_INICIALES: Empleado[] = [
-  { id: 'emp-1', nombre: 'Carlos Manuel Rodríguez', cedula: '001-1284950-3', rol: 'operador', vehiculoAsignado: 'Retroexcavadora CAT 320 (#01)', placaAsignada: 'EQUIP-01' },
-  { id: 'emp-2', nombre: 'Juan Antonio Pérez', cedula: '001-0847291-5', rol: 'operador', vehiculoAsignado: 'Pala Cargadora CAT 950 (#02)', placaAsignada: 'EQUIP-02' },
-  { id: 'emp-3', nombre: 'Ramón Emilio González', cedula: '002-0048192-8', rol: 'chofer', vehiculoAsignado: 'Camión Mack 14m³', placaAsignada: 'L-394810' },
-  { id: 'emp-4', nombre: 'José Luis Almonte', cedula: '001-1928471-2', rol: 'chofer', vehiculoAsignado: 'Camión International 16m³', placaAsignada: 'L-291048' },
-  { id: 'emp-5', nombre: 'Miguel Ángel Torres', cedula: '012-0038419-4', rol: 'chequeador', telefono: '(809) 481-2093' },
-  { id: 'emp-6', nombre: 'Santo Reyes Guzmán', cedula: '001-0029381-0', rol: 'chequeador', telefono: '(829) 304-9182' },
-  { id: 'emp-7', nombre: 'Lidia María Rosario', cedula: '001-1827364-9', rol: 'administrativo', telefono: '(809) 530-1000' }
+  { id: 'emp-1', nombre: 'Carlos Manuel Rodríguez', cedula: '001-1284950-3', rol: 'operador', vehiculoAsignado: 'Retroexcavadora CAT 320 (#01)', placaAsignada: 'EQUIP-01', salarioBase: 35000, tipoSalario: 'mensual' },
+  { id: 'emp-2', nombre: 'Juan Antonio Pérez', cedula: '001-0847291-5', rol: 'operador', vehiculoAsignado: 'Pala Cargadora CAT 950 (#02)', placaAsignada: 'EQUIP-02', salarioBase: 32000, tipoSalario: 'mensual' },
+  { id: 'emp-3', nombre: 'Ramón Emilio González', cedula: '002-0048192-8', rol: 'chofer', vehiculoAsignado: 'Camión Mack 14m³', placaAsignada: 'L-394810', salarioBase: 28000, tipoSalario: 'mensual' },
+  { id: 'emp-4', nombre: 'José Luis Almonte', cedula: '001-1928471-2', rol: 'chofer', vehiculoAsignado: 'Camión International 16m³', placaAsignada: 'L-291048', salarioBase: 28000, tipoSalario: 'mensual' },
+  { id: 'emp-5', nombre: 'Miguel Ángel Torres', cedula: '012-0038419-4', rol: 'chequeador', telefono: '(809) 481-2093', salarioBase: 22000, tipoSalario: 'mensual' },
+  { id: 'emp-6', nombre: 'Santo Reyes Guzmán', cedula: '001-0029381-0', rol: 'chequeador', telefono: '(829) 304-9182', salarioBase: 22000, tipoSalario: 'mensual' },
+  { id: 'emp-7', nombre: 'Lidia María Rosario', cedula: '001-1827364-9', rol: 'administrativo', telefono: '(809) 530-1000', salarioBase: 40000, tipoSalario: 'mensual' }
 ];
 
 export const EQUIPOS_VEHICULOS_INICIALES: EquipoVehiculo[] = [

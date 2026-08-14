@@ -28,7 +28,7 @@ export const ServiciosPreciosManager: React.FC<ServiciosPreciosManagerProps> = (
   const [nombreServicio, setNombreServicio] = useState<string>('');
   const [categoriaServicio, setCategoriaServicio] = useState<'equipo_pesado' | 'material' | 'acarreo_servicio'>('equipo_pesado');
   const [unidadCobro, setUnidadCobro] = useState<UnidadCobro>('hora');
-  const [precioBase, setPrecioBase] = useState<number>(1000);
+  const [precioBase, setPrecioBase] = useState<number>(0);
 
   // Estado Formulario Cliente
   const [modalCliente, setModalCliente] = useState<boolean>(false);
@@ -56,7 +56,7 @@ export const ServiciosPreciosManager: React.FC<ServiciosPreciosManagerProps> = (
       setNombreServicio('');
       setCategoriaServicio('equipo_pesado');
       setUnidadCobro('hora');
-      setPrecioBase(1000);
+      setPrecioBase(0);
     }
     setModalServicio(true);
   };
@@ -95,14 +95,14 @@ export const ServiciosPreciosManager: React.FC<ServiciosPreciosManagerProps> = (
   // Guardar Servicio Base
   const handleGuardarServicio = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nombreServicio.trim() || precioBase <= 0) return;
+    if (!nombreServicio.trim() || precioBase < 0) return;
 
     const servGuardar: Servicio = {
       id: servicioEdit ? servicioEdit.id : `serv-${Date.now()}`,
       nombre: nombreServicio.trim(),
       categoria: categoriaServicio,
       unidadCobro,
-      precioBase: Number(precioBase)
+      precioBase: Number(precioBase) || 0
     };
 
     onSaveServicio(servGuardar);

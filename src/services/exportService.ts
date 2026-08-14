@@ -3,6 +3,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import {
   Conduce,
+  Empleado,
   FiltrosReporte,
   CompraGasoil,
   DespachoGasoil,
@@ -95,11 +96,14 @@ export class ExportService {
   /**
    * Genera las filas aplanadas para el Reporte de Nómina
    */
-  static procesarFilasReporteNomina(conduces: Conduce[]): ReporteNominaFila[] {
+  static procesarFilasReporteNomina(conduces: Conduce[], empleados?: Empleado[]): ReporteNominaFila[] {
     const filas: ReporteNominaFila[] = [];
 
     conduces.forEach((c) => {
       if (c.tipo === 'equipo_pesado') {
+        const emp = empleados?.find((e) => e.nombre.toLowerCase().trim() === (c.operadorNombre || '').toLowerCase().trim());
+        const infoNomina = emp?.salarioBase ? `$${emp.salarioBase.toLocaleString('es-DO')} (${emp.tipoSalario || 'mensual'})` : 'Pendiente de definir';
+
         filas.push({
           empleadoNombre: c.operadorNombre || 'Sin Asignar',
           equipoNombre: c.equipoAsignado,
@@ -113,9 +117,12 @@ export class ExportService {
           metros: 0,
           precioServicio: c.precioPorHora,
           importeServicio: c.montoTotal,
-          pagoNomina: 'Pendiente de definir'
+          pagoNomina: infoNomina
         });
       } else {
+        const emp = empleados?.find((e) => e.nombre.toLowerCase().trim() === (c.choferNombre || '').toLowerCase().trim());
+        const infoNomina = emp?.salarioBase ? `$${emp.salarioBase.toLocaleString('es-DO')} (${emp.tipoSalario || 'mensual'})` : 'Pendiente de definir';
+
         (c.detalles || []).forEach((det) => {
           filas.push({
             empleadoNombre: c.choferNombre || 'Sin Asignar',
@@ -130,7 +137,7 @@ export class ExportService {
             metros: det.unidad === 'metro' ? det.cantidad : 0,
             precioServicio: det.precioUnitario,
             importeServicio: det.subtotal,
-            pagoNomina: 'Pendiente de definir'
+            pagoNomina: infoNomina
           });
         });
       }
@@ -284,8 +291,8 @@ export class ExportService {
   }
 
   // ===================== EXPORTAR REPORTE NÓMINA (EXCEL) =====================
-  static exportarNominaExcel(conduces: Conduce[], filtros: FiltrosReporte): void {
-    const filas = this.procesarFilasReporteNomina(conduces);
+  static exportarNominaExcel(conduces: Conduce[], filtros: FiltrosReporte, empleados?: Empleado[]): void {
+    const filas = this.procesarFilasReporteNomina(conduces, empleados);
 
     const datosExcel = filas.map((f) => ({
       'Chofer / Operador': f.empleadoNombre,
@@ -300,7 +307,7 @@ export class ExportService {
       'Volumen (m³)': f.metros || '-',
       'Precio Servicio ($)': f.precioServicio,
       'Importe Servicio ($)': f.importeServicio,
-      'Pago Est. Nómina ($)': f.pagoNomina
+      'Salario / Tarifa': f.pagoNomina
     }));
 
     const totalHoras = filas.reduce((sum, f) => sum + f.horasTrabajadas, 0);
@@ -321,7 +328,7 @@ export class ExportService {
       'Volumen (m³)': totalMetros,
       'Precio Servicio ($)': 0,
       'Importe Servicio ($)': totalMonto,
-      'Pago Est. Nómina ($)': 'Pendiente de definir'
+      'Salario / Tarifa': '-'
     });
 
     const clienteNombreTexto = filtros.clienteNombre || (filtros.clienteId ? filtros.clienteId : 'Todos los Clientes');
@@ -338,7 +345,7 @@ export class ExportService {
       [`  • Cliente: ${clienteNombreTexto}`],
       [`  • Operador / Chofer: ${choferTexto}`],
       [`  • Total Registros: ${filas.length}`],
-      ['Nota: Los valores reflejan el importe del servicio al cliente. El pago final de nómina dependerá de la regla salarial definida por la empresa.'],
+      ['Nota: Los valores reflejan el importe del servicio al cliente y el esquema salarial configurado para cada empleado.'],
       []
     ];
 
@@ -357,9 +364,9 @@ export class ExportService {
   }
 
   // ===================== EXPORTAR REPORTE NÓMINA (PDF) =====================
-  static exportarNominaPDF(conduces: Conduce[], filtros: FiltrosReporte): void {
+  static exportarNominaPDF(conduces: Conduce[], filtros: FiltrosReporte, empleados?: Empleado[]): void {
     const doc = new jsPDF('landscape', 'mm', 'a4');
-    const filas = this.procesarFilasReporteNomina(conduces);
+    const filas = this.procesarFilasReporteNomina(conduces, empleados);
 
     const clienteNombreTexto = filtros.clienteNombre || (filtros.clienteId ? filtros.clienteId : 'Todos los Clientes');
     const choferTexto = filtros.empleadoNombre ? filtros.empleadoNombre : 'Todos los Operadores / Choferes';
@@ -377,9 +384,9 @@ export class ExportService {
     doc.setFontSize(8);
     doc.setTextColor(60, 60, 60);
     doc.text(`FILTROS APLICADOS -> Periodo: ${rangoTexto}  |  Cliente: ${clienteNombreTexto}  |  Chofer/Operador: ${choferTexto}  |  Registros: ${filas.length}`, 14, 24);
-    doc.text('Nota: Los importes corresponden al servicio facturado al cliente. El pago de nómina está pendiente de definir por la empresa.', 14, 28);
+    doc.text('Nota: Los importes corresponden al servicio facturado al cliente y se muestra la tarifa/salario acordado.', 14, 28);
 
-    const head = [['Chofer / Operador', 'Equipo/Vehículo', 'Placa', 'Fecha', 'No. Conduce', 'Cliente', 'Servicio', 'H.T.', 'Viajes', 'm³', 'Precio Serv.', 'Imp. Servicio ($)', 'Pago Nómina']];
+    const head = [['Chofer / Operador', 'Equipo/Vehículo', 'Placa', 'Fecha', 'No. Conduce', 'Cliente', 'Servicio', 'H.T.', 'Viajes', 'm³', 'Precio Serv.', 'Imp. Servicio ($)', 'Salario / Tarifa']];
 
     const body = filas.map((f) => [
       f.empleadoNombre,

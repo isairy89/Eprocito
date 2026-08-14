@@ -29,12 +29,7 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
   onCancel,
   conduceExistente
 }) => {
-  // Filtrar solo servicios que aplican para equipos por hora
-  const serviciosEquipos = servicios.filter(
-    (s) => s.categoria === 'equipo_pesado' || s.unidadCobro === 'hora'
-  );
-
-  // Lista combinada de opciones de equipos pesados disponibles (desde catálogo de equipos y servicios)
+  // Lista combinada de opciones de equipos disponibles (desde catálogo de equipos y servicios)
   const listaEquiposPesados = useMemo(() => {
     const items: Array<{
       id: string;
@@ -45,42 +40,39 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
     }> = [];
     const nombresVistos = new Set<string>();
 
-    // 1. Agregar servicios de equipo pesado
-    serviciosEquipos.forEach((s) => {
-      const eqMatch = equipos.find(
-        (e) => e.nombre.toLowerCase() === s.nombre.toLowerCase() || s.id === `serv-${e.id}`
+    // 1. Agregar TODOS los equipos y vehículos registrados en el catálogo de maquinarias/camiones
+    equipos.forEach((eq) => {
+      const nombreKey = eq.nombre.toLowerCase().trim();
+      nombresVistos.add(nombreKey);
+      const sMatch = servicios.find(
+        (s) => s.nombre.toLowerCase().trim() === nombreKey || s.id === `serv-${eq.id}`
       );
-      nombresVistos.add(s.nombre.toLowerCase());
       items.push({
-        id: s.id,
-        nombre: s.nombre,
-        placa: eqMatch?.placa,
-        precioBase: s.precioBase,
-        servicioId: s.id
+        id: eq.id,
+        nombre: eq.nombre,
+        placa: eq.placa,
+        precioBase: sMatch ? sMatch.precioBase : 0,
+        servicioId: sMatch ? sMatch.id : `serv-${eq.id}`
       });
     });
 
-    // 2. Agregar equipos pesados registrados que no estén duplicados
-    equipos
-      .filter((e) => e.tipo === 'equipo_pesado' || e.tipo === 'vehiculo_liviano')
-      .forEach((eq) => {
-        if (!nombresVistos.has(eq.nombre.toLowerCase())) {
-          nombresVistos.add(eq.nombre.toLowerCase());
-          const sMatch = servicios.find(
-            (s) => s.nombre.toLowerCase() === eq.nombre.toLowerCase() || s.id === `serv-${eq.id}`
-          );
-          items.push({
-            id: eq.id,
-            nombre: eq.nombre,
-            placa: eq.placa,
-            precioBase: sMatch ? sMatch.precioBase : 2500,
-            servicioId: sMatch ? sMatch.id : `serv-${eq.id}`
-          });
-        }
-      });
+    // 2. Agregar cualquier servicio del catálogo que no esté aún en la lista
+    servicios.forEach((s) => {
+      const nombreKey = s.nombre.toLowerCase().trim();
+      if (!nombresVistos.has(nombreKey)) {
+        nombresVistos.add(nombreKey);
+        items.push({
+          id: s.id,
+          nombre: s.nombre,
+          placa: '',
+          precioBase: s.precioBase,
+          servicioId: s.id
+        });
+      }
+    });
 
     return items;
-  }, [serviciosEquipos, equipos, servicios]);
+  }, [equipos, servicios]);
 
   const operadores = empleados.filter((e) => e.rol === 'operador' || e.rol === 'chofer');
   const chequeadores = empleados.filter((e) => e.rol === 'chequeador' || e.rol === 'administrativo');
@@ -96,18 +88,18 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
   const [equipoAsignado, setEquipoAsignado] = useState<string>('');
   const [placa, setPlaca] = useState<string>('');
 
-  // Turnos
-  const [mananaInicio, setMananaInicio] = useState<string>('08:00');
-  const [mananaFin, setMananaFin] = useState<string>('12:00');
+  // Turnos (inician vacíos para nuevos registros)
+  const [mananaInicio, setMananaInicio] = useState<string>('');
+  const [mananaFin, setMananaFin] = useState<string>('');
   
-  const [tardeInicio, setTardeInicio] = useState<string>('13:00');
-  const [tardeFin, setTardeFin] = useState<string>('17:00');
+  const [tardeInicio, setTardeInicio] = useState<string>('');
+  const [tardeFin, setTardeFin] = useState<string>('');
   
   const [nocheInicio, setNocheInicio] = useState<string>('');
   const [nocheFin, setNocheFin] = useState<string>('');
 
   // Horas y Precio
-  const [totalHorasPagar, setTotalHorasPagar] = useState<number>(8);
+  const [totalHorasPagar, setTotalHorasPagar] = useState<number>(0);
   const [precioPorHora, setPrecioPorHora] = useState<number>(0);
 
   // Empleados asignados
@@ -120,7 +112,7 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
 
   const isInitialEditLoad = useRef<boolean>(!!conduceExistente);
 
-  // Autogenerar Número de Conduce al crear nuevo o cargar datos al editar
+  // Cargar datos al editar o autogenerar número correlativo al crear nuevo
   useEffect(() => {
     if (conduceExistente) {
       isInitialEditLoad.current = true;
@@ -136,14 +128,23 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
       if (conduceExistente.turnoManana) {
         setMananaInicio(conduceExistente.turnoManana.inicio);
         setMananaFin(conduceExistente.turnoManana.fin);
+      } else {
+        setMananaInicio('');
+        setMananaFin('');
       }
       if (conduceExistente.turnoTarde) {
         setTardeInicio(conduceExistente.turnoTarde.inicio);
         setTardeFin(conduceExistente.turnoTarde.fin);
+      } else {
+        setTardeInicio('');
+        setTardeFin('');
       }
       if (conduceExistente.turnoNoche) {
         setNocheInicio(conduceExistente.turnoNoche.inicio);
         setNocheFin(conduceExistente.turnoNoche.fin);
+      } else {
+        setNocheInicio('');
+        setNocheFin('');
       }
 
       setTotalHorasPagar(conduceExistente.totalHorasPagar);
@@ -153,8 +154,26 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
       setObservaciones(conduceExistente.observaciones || '');
     } else {
       isInitialEditLoad.current = false;
-      const randomNum = Math.floor(100 + Math.random() * 900);
-      setNumeroConduce(`EP-00${randomNum}`);
+      const sigNum = StorageService.generarSiguienteNumeroConduce('equipo_pesado');
+      setNumeroConduce(sigNum);
+      setFecha(new Date().toISOString().slice(0, 10));
+      setClienteId('');
+      setDireccionProyecto('');
+      setTelefonoContacto('');
+      setServicioId('');
+      setEquipoAsignado('');
+      setPlaca('');
+      setMananaInicio('');
+      setMananaFin('');
+      setTardeInicio('');
+      setTardeFin('');
+      setNocheInicio('');
+      setNocheFin('');
+      setTotalHorasPagar(0);
+      setPrecioPorHora(0);
+      setOperadorNombre('');
+      setChequeadorNombre('');
+      setObservaciones('');
     }
   }, [conduceExistente]);
 

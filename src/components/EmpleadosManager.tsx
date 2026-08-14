@@ -36,6 +36,8 @@ export const EmpleadosManager: React.FC<EmpleadosManagerProps> = ({
   const [telefono, setTelefono] = useState<string>('');
   const [vehiculoAsignado, setVehiculoAsignado] = useState<string>('');
   const [placaAsignada, setPlacaAsignada] = useState<string>('');
+  const [salarioBase, setSalarioBase] = useState<number>(0);
+  const [tipoSalario, setTipoSalario] = useState<'quincenal' | 'mensual' | 'por_hora' | 'por_viaje'>('mensual');
 
   const handleOpenModal = (emp?: Empleado) => {
     if (emp) {
@@ -46,6 +48,8 @@ export const EmpleadosManager: React.FC<EmpleadosManagerProps> = ({
       setTelefono(emp.telefono || '');
       setVehiculoAsignado(emp.vehiculoAsignado || '');
       setPlacaAsignada(emp.placaAsignada || '');
+      setSalarioBase(emp.salarioBase || 0);
+      setTipoSalario(emp.tipoSalario || 'mensual');
     } else {
       setEmpleadoEdit(null);
       setNombre('');
@@ -54,6 +58,8 @@ export const EmpleadosManager: React.FC<EmpleadosManagerProps> = ({
       setTelefono('');
       setVehiculoAsignado('');
       setPlacaAsignada('');
+      setSalarioBase(0);
+      setTipoSalario('mensual');
     }
     setModalEmpleado(true);
   };
@@ -69,7 +75,9 @@ export const EmpleadosManager: React.FC<EmpleadosManagerProps> = ({
       rol,
       telefono: telefono.trim(),
       vehiculoAsignado: vehiculoAsignado.trim(),
-      placaAsignada: placaAsignada.trim().toUpperCase()
+      placaAsignada: placaAsignada.trim().toUpperCase(),
+      salarioBase: Number(salarioBase) > 0 ? Number(salarioBase) : undefined,
+      tipoSalario
     };
 
     onSaveEmpleado(empGuardar);
@@ -179,13 +187,14 @@ export const EmpleadosManager: React.FC<EmpleadosManagerProps> = ({
                 <th className="p-3.5">Teléfono</th>
                 <th className="p-3.5">Equipo / Vehículo Asignado</th>
                 <th className="p-3.5">Placa</th>
+                <th className="p-3.5">Salario / Tarifa</th>
                 <th className="p-3.5 text-center">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {empleadosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-slate-500">
+                  <td colSpan={8} className="p-8 text-center text-slate-500">
                     No se encontraron empleados que coincidan con la búsqueda.
                   </td>
                 </tr>
@@ -216,6 +225,18 @@ export const EmpleadosManager: React.FC<EmpleadosManagerProps> = ({
                         </span>
                       ) : (
                         <span className="text-slate-500 text-[10px]">S/P</span>
+                      )}
+                    </td>
+                    <td className="p-3.5">
+                      {e.salarioBase ? (
+                        <span className="text-emerald-400 font-mono font-bold">
+                          ${e.salarioBase.toLocaleString('es-DO')}{' '}
+                          <span className="text-[10px] text-slate-400 font-normal font-sans">
+                            ({e.tipoSalario || 'mensual'})
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 text-[10px] italic">Sin configurar</span>
                       )}
                     </td>
                     <td className="p-3.5 text-center">
@@ -328,6 +349,33 @@ export const EmpleadosManager: React.FC<EmpleadosManagerProps> = ({
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono uppercase outline-none focus:border-amber-500"
                     placeholder="ej. L-394810"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 mb-1 font-medium">Salario / Tarifa Base ($)</label>
+                  <input
+                    type="number"
+                    value={salarioBase || ''}
+                    onChange={(e) => setSalarioBase(parseFloat(e.target.value) || 0)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono outline-none focus:border-amber-500"
+                    placeholder="ej. 35000"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 mb-1 font-medium">Esquema de Pago</label>
+                  <select
+                    value={tipoSalario}
+                    onChange={(e) => setTipoSalario(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white outline-none focus:border-amber-500"
+                  >
+                    <option value="mensual">Mensual</option>
+                    <option value="quincenal">Quincenal</option>
+                    <option value="por_hora">Por Hora</option>
+                    <option value="por_viaje">Por Viaje</option>
+                  </select>
                 </div>
               </div>
 

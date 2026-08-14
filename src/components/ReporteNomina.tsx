@@ -37,8 +37,8 @@ export const ReporteNomina: React.FC<ReporteNominaProps> = ({
 
   // Filas aplanadas de nómina
   const filasNomina = useMemo(() => {
-    return ExportService.procesarFilasReporteNomina(conducesFiltrados);
-  }, [conducesFiltrados]);
+    return ExportService.procesarFilasReporteNomina(conducesFiltrados, empleados);
+  }, [conducesFiltrados, empleados]);
 
   // Agrupamiento por Empleado (Chofer / Operador)
   const agrupadoPorEmpleado = useMemo(() => {
@@ -89,13 +89,13 @@ export const ReporteNomina: React.FC<ReporteNominaProps> = ({
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => ExportService.exportarNominaExcel(conducesFiltrados, filtrosActuales)}
+              onClick={() => ExportService.exportarNominaExcel(conducesFiltrados, filtrosActuales, empleados)}
               className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow transition-all cursor-pointer"
             >
               <FileSpreadsheet className="w-4 h-4" /> Exportar Excel (.xlsx)
             </button>
             <button
-              onClick={() => ExportService.exportarNominaPDF(conducesFiltrados, filtrosActuales)}
+              onClick={() => ExportService.exportarNominaPDF(conducesFiltrados, filtrosActuales, empleados)}
               className="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl flex items-center gap-2 shadow transition-all cursor-pointer"
             >
               <FileText className="w-4 h-4" /> Exportar PDF (.pdf)
@@ -226,6 +226,10 @@ export const ReporteNomina: React.FC<ReporteNominaProps> = ({
             const primeraPlaca = filas[0]?.placa ? `Placa: ${filas[0].placa}` : '';
             const equipoPlacaStr = [primerEq, primeraPlaca].filter(Boolean).join(' | ');
 
+            const empConfig = empleados.find(
+              (e) => e.nombre.toLowerCase().trim() === nombreEmpleado.toLowerCase().trim()
+            );
+
             return (
               <div key={nombreEmpleado} className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
                 
@@ -235,15 +239,22 @@ export const ReporteNomina: React.FC<ReporteNominaProps> = ({
                     <h3 className="text-xs font-bold text-white flex items-center gap-2">
                       <Users className="w-4 h-4 text-amber-400" /> {nombreEmpleado}
                     </h3>
-                    <span className="text-[10px] text-slate-400 font-mono">{equipoPlacaStr}</span>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="text-[10px] text-slate-400 font-mono">{equipoPlacaStr}</span>
+                      {empConfig?.salarioBase && (
+                        <span className="text-[10px] bg-emerald-500/10 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/20 font-mono">
+                          Salario: ${empConfig.salarioBase.toLocaleString('es-DO')} ({empConfig.tipoSalario || 'mensual'})
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="text-right">
                     <span className="text-xs font-mono text-slate-300 block">
                       Importe Serv. Producidos: <strong className="text-amber-400">${subMontoServicios.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</strong>
                     </span>
-                    <span className="text-[10px] font-sans text-slate-500 italic block">
-                      Pago Nómina: Pendiente de definir
+                    <span className="text-[10px] font-sans text-slate-400 block">
+                      Esquema: {empConfig?.salarioBase ? `$${empConfig.salarioBase.toLocaleString('es-DO')} (${empConfig.tipoSalario || 'mensual'})` : 'Configurar en Empleados'}
                     </span>
                   </div>
                 </div>
@@ -264,7 +275,7 @@ export const ReporteNomina: React.FC<ReporteNominaProps> = ({
                         <th className="p-2.5 text-right">m³</th>
                         <th className="p-2.5 text-right">Precio Serv. ($)</th>
                         <th className="p-2.5 text-right">Imp. Servicio ($)</th>
-                        <th className="p-2.5 text-center">Pago Nómina ($)</th>
+                        <th className="p-2.5 text-center">Salario / Tarifa</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60 font-mono">
@@ -281,7 +292,9 @@ export const ReporteNomina: React.FC<ReporteNominaProps> = ({
                           <td className="p-2.5 text-right text-emerald-400">{f.metros ? `${f.metros} m³` : '-'}</td>
                           <td className="p-2.5 text-right text-slate-300">${f.precioServicio.toLocaleString('es-DO')}</td>
                           <td className="p-2.5 text-right font-bold text-white">${f.importeServicio.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</td>
-                          <td className="p-2.5 text-center font-sans text-[11px] text-slate-500 italic">Por definir</td>
+                          <td className="p-2.5 text-center font-sans text-[11px] text-slate-300">
+                            {empConfig?.salarioBase ? `$${empConfig.salarioBase.toLocaleString('es-DO')} (${empConfig.tipoSalario || 'mensual'})` : 'Por definir'}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -293,7 +306,9 @@ export const ReporteNomina: React.FC<ReporteNominaProps> = ({
                         <td className="p-2.5 text-right text-emerald-400 font-mono">{subMetros > 0 ? `${subMetros} m³` : '-'}</td>
                         <td></td>
                         <td className="p-2.5 text-right text-amber-400 font-mono">${subMontoServicios.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</td>
-                        <td className="p-2.5 text-center font-sans text-[10px] text-slate-500 italic font-normal">Por definir</td>
+                        <td className="p-2.5 text-center font-sans text-[10px] text-emerald-400 font-normal">
+                          {empConfig?.salarioBase ? `$${empConfig.salarioBase.toLocaleString('es-DO')} / ${empConfig.tipoSalario || 'mensual'}` : 'Sin salario configurado'}
+                        </td>
                       </tr>
                     </tfoot>
                   </table>

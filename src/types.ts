@@ -38,6 +38,8 @@ export interface Empleado {
   telefono?: string;
   vehiculoAsignado?: string;
   placaAsignada?: string;
+  salarioBase?: number;
+  tipoSalario?: 'quincenal' | 'mensual' | 'por_hora' | 'por_viaje';
 }
 
 export interface EquipoVehiculo {

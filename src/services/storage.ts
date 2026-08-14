@@ -144,6 +144,34 @@ export class StorageService {
     setItem(KEYS.CONDUCES, conduces);
   }
 
+  // Generador de Consecutivo Seguro de Conduce (sin duplicados ni Math.random)
+  static generarSiguienteNumeroConduce(tipo: 'equipo_pesado' | 'materiales', prefijo?: string): string {
+    const conduces = this.getConduces();
+    const pref = (prefijo || (tipo === 'equipo_pesado' ? 'EP' : 'E')).toUpperCase();
+    
+    // Extraer todos los números asociados a este prefijo
+    let maxNumero = 0;
+    const regex = new RegExp(`^${pref}-0*([0-9]+)$`, 'i');
+    
+    conduces.forEach((c) => {
+      const limpio = (c.numeroConduce || '').trim();
+      const match = limpio.match(regex);
+      if (match && match[1]) {
+        const val = parseInt(match[1], 10);
+        if (!isNaN(val) && val > maxNumero) {
+          maxNumero = val;
+        }
+      }
+    });
+
+    // Si no hay números previos, comenzar en base lógica según el tipo
+    const siguienteValor = maxNumero > 0 ? maxNumero + 1 : (tipo === 'equipo_pesado' ? 101 : 501);
+    
+    // Rellenar con ceros (ej: EP-00103 o E-00503)
+    const numeroRelleno = String(siguienteValor).padStart(5, '0');
+    return `${pref}-${numeroRelleno}`;
+  }
+
   // ==========================================
   // METODOS MÓDULO DE CONTROL DE GASOIL
   // ==========================================
