@@ -31,6 +31,7 @@ import {
   Conduce,
   Servicio,
   Empleado,
+  EquipoVehiculo,
   FiltrosGasoil,
   AlertaGasoil
 } from '../types';
@@ -45,6 +46,7 @@ interface ControlGasoilManagerProps {
   conduces: Conduce[];
   servicios: Servicio[];
   empleados: Empleado[];
+  equipos?: EquipoVehiculo[];
   onSaveConfig: (cfg: ConfiguracionGasoil) => void;
   onSaveCompra: (compra: CompraGasoil) => void;
   onDeleteCompra: (id: string) => void;
@@ -64,6 +66,7 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
   conduces,
   servicios,
   empleados,
+  equipos = [],
   onSaveConfig,
   onSaveCompra,
   onDeleteCompra,
@@ -92,11 +95,9 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
   const [compraEditando, setCompraEditando] = useState<CompraGasoil | null>(null);
 
   const [modalConteoAbierto, setModalConteoAbierto] = useState(false);
-  const [modalConfigAbierto, setModalConfigAbierto] = useState(false);
 
-  const [errorDespacho, setErrorDespacho] = useState<string | null>(null);
-  const [errorCompra, setErrorCompra] = useState<string | null>(null);
-  const [errorConteo, setErrorConteo] = useState<string | null>(null);
+  // Modal Ajuste Existencia Inicial
+  const [modalConfigAbierto, setModalConfigAbierto] = useState(false);
   const [tempExistenciaInicial, setTempExistenciaInicial] = useState<number>(
     configGasoil.existenciaInicialGalones || 1000
   );
@@ -183,6 +184,9 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
   const listaEquiposSugeridos = useMemo(() => {
     const setEq = new Set<string>();
     servicios.forEach((s) => setEq.add(s.nombre));
+    equipos.forEach((eq) => {
+      if (eq.nombre) setEq.add(eq.nombre);
+    });
     empleados.forEach((e) => {
       if (e.vehiculoAsignado) setEq.add(e.vehiculoAsignado);
     });
@@ -190,10 +194,13 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
       if (c.tipo === 'equipo_pesado' && c.equipoAsignado) setEq.add(c.equipoAsignado);
     });
     return Array.from(setEq);
-  }, [servicios, empleados, conduces]);
+  }, [servicios, equipos, empleados, conduces]);
 
   const listaPlacasSugeridas = useMemo(() => {
     const setPl = new Set<string>();
+    equipos.forEach((eq) => {
+      if (eq.placa) setPl.add(eq.placa);
+    });
     empleados.forEach((e) => {
       if (e.placaAsignada) setPl.add(e.placaAsignada);
     });
@@ -202,7 +209,7 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
       if (c.tipo === 'materiales' && c.placaCamion) setPl.add(c.placaCamion);
     });
     return Array.from(setPl);
-  }, [empleados, conduces]);
+  }, [equipos, empleados, conduces]);
 
   const listaOperadoresSugeridos = useMemo(() => {
     const setOp = new Set<string>();
@@ -216,7 +223,6 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
 
   // Manejadores de Formularios
   const handleAbrirNuevoDespacho = () => {
-    setErrorDespacho(null);
     setDespachoEditando(null);
     setFormDespacho({
       fecha: new Date().toISOString().split('T')[0],
@@ -238,7 +244,6 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
   };
 
   const handleAbrirEditarDespacho = (d: DespachoGasoil) => {
-    setErrorDespacho(null);
     setDespachoEditando(d);
     setFormDespacho({ ...d });
     setModalDespachoAbierto(true);
@@ -246,13 +251,8 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
 
   const handleGuardarDespachoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorDespacho(null);
     if (!formDespacho.equipoOVehiculo || !formDespacho.fecha || !formDespacho.galones) {
-      setErrorDespacho('Por favor complete los campos obligatorios: Fecha, Equipo/Vehículo y Galones.');
-      return;
-    }
-    if (Number(formDespacho.galones) <= 0) {
-      setErrorDespacho('La cantidad de galones debe ser mayor a 0.');
+      alert('Por favor complete los campos obligatorios: Fecha, Equipo/Vehículo y Galones.');
       return;
     }
 
@@ -281,7 +281,6 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
   };
 
   const handleAbrirNuevaCompra = () => {
-    setErrorCompra(null);
     setCompraEditando(null);
     setFormCompra({
       fecha: new Date().toISOString().split('T')[0],
@@ -296,7 +295,6 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
   };
 
   const handleAbrirEditarCompra = (c: CompraGasoil) => {
-    setErrorCompra(null);
     setCompraEditando(c);
     setFormCompra({ ...c });
     setModalCompraAbierto(true);
@@ -304,13 +302,8 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
 
   const handleGuardarCompraSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorCompra(null);
     if (!formCompra.proveedor || !formCompra.fecha || !formCompra.galones) {
-      setErrorCompra('Por favor complete Fecha, Proveedor y Galones.');
-      return;
-    }
-    if (Number(formCompra.galones) <= 0) {
-      setErrorCompra('La cantidad de galones debe ser mayor a 0.');
+      alert('Por favor complete Fecha, Proveedor y Galones.');
       return;
     }
 
@@ -336,7 +329,6 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
   };
 
   const handleAbrirNuevoConteo = () => {
-    setErrorConteo(null);
     setFormConteo({
       fecha: new Date().toISOString().split('T')[0],
       existenciaFisicaGalones: '',
@@ -348,15 +340,6 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
 
   const handleGuardarConteoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorConteo(null);
-    if (!formConteo.fecha || !formConteo.responsable) {
-      setErrorConteo('Por favor complete Fecha y Responsable.');
-      return;
-    }
-    if (formConteo.existenciaFisicaGalones === '' || Number(formConteo.existenciaFisicaGalones) < 0) {
-      setErrorConteo('La existencia física debe ser un número válido mayor o igual a 0.');
-      return;
-    }
     const teorica = resumen.saldoTeoricoGalones;
     const fisica = Number(formConteo.existenciaFisicaGalones) || 0;
     const diferencia = fisica - teorica;
@@ -1250,13 +1233,6 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
               </div>
             )}
 
-            {errorDespacho && (
-              <div className="bg-rose-950/80 border border-rose-500/80 p-3 rounded-xl text-rose-100 text-xs flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
-                <span>{errorDespacho}</span>
-              </div>
-            )}
-
             <form onSubmit={handleGuardarDespachoSubmit} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -1480,13 +1456,6 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
               {compraEditando ? 'Editar Compra de Gasoil' : 'Registrar Compra de Combustible'}
             </h3>
 
-            {errorCompra && (
-              <div className="bg-rose-950/80 border border-rose-500/80 p-3 rounded-xl text-rose-100 text-xs flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
-                <span>{errorCompra}</span>
-              </div>
-            )}
-
             <form onSubmit={handleGuardarCompraSubmit} className="space-y-4 text-xs">
               <div>
                 <label className="block text-slate-400 font-semibold mb-1">Fecha de Compra *</label>
@@ -1625,13 +1594,6 @@ export const ControlGasoilManager: React.FC<ControlGasoilManagerProps> = ({
             <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
               <Scale className="w-5 h-5 text-sky-400" /> Registrar Conteo Físico en Tanque
             </h3>
-
-            {errorConteo && (
-              <div className="bg-rose-950/80 border border-rose-500/80 p-3 rounded-xl text-rose-100 text-xs flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
-                <span>{errorConteo}</span>
-              </div>
-            )}
 
             <form onSubmit={handleGuardarConteoSubmit} className="space-y-4 text-xs">
               <div>

@@ -7,13 +7,15 @@ import {
   ConfiguracionGasoil,
   CompraGasoil,
   DespachoGasoil,
-  ConteoFisicoGasoil
+  ConteoFisicoGasoil,
+  EquipoVehiculo
 } from '../types';
 import {
   CLIENTES_INICIALES,
   SERVICIOS_INICIALES,
   PRECIOS_CLIENTE_INICIALES,
   EMPLEADOS_INICIALES,
+  EQUIPOS_VEHICULOS_INICIALES,
   CONDUCES_INICIALES,
   CONFIGURACION_GASOIL_INICIAL,
   COMPRAS_GASOIL_INICIALES,
@@ -26,6 +28,7 @@ const KEYS = {
   SERVICIOS: 'equiproci_servicios',
   PRECIOS_CLIENTE: 'equiproci_precios_cliente',
   EMPLEADOS: 'equiproci_empleados',
+  EQUIPOS_VEHICULOS: 'equiproci_equipos_vehiculos',
   CONDUCES: 'equiproci_conduces',
   GASOIL_CONFIG: 'equiproci_gasoil_config',
   GASOIL_COMPRAS: 'equiproci_gasoil_compras',
@@ -125,6 +128,14 @@ export class StorageService {
     setItem(KEYS.EMPLEADOS, empleados);
   }
 
+  // Equipos y Vehículos
+  static getEquiposVehiculos(): EquipoVehiculo[] {
+    return getItem(KEYS.EQUIPOS_VEHICULOS, EQUIPOS_VEHICULOS_INICIALES);
+  }
+  static saveEquiposVehiculos(equipos: EquipoVehiculo[]): void {
+    setItem(KEYS.EQUIPOS_VEHICULOS, equipos);
+  }
+
   // Conduces
   static getConduces(): Conduce[] {
     return getItem(KEYS.CONDUCES, CONDUCES_INICIALES);
@@ -186,6 +197,7 @@ export class StorageService {
     setItem(KEYS.SERVICIOS, SERVICIOS_INICIALES);
     setItem(KEYS.PRECIOS_CLIENTE, PRECIOS_CLIENTE_INICIALES);
     setItem(KEYS.EMPLEADOS, EMPLEADOS_INICIALES);
+    setItem(KEYS.EQUIPOS_VEHICULOS, EQUIPOS_VEHICULOS_INICIALES);
     setItem(KEYS.CONDUCES, CONDUCES_INICIALES);
     setItem(KEYS.GASOIL_CONFIG, CONFIGURACION_GASOIL_INICIAL);
     setItem(KEYS.GASOIL_COMPRAS, COMPRAS_GASOIL_INICIALES);

@@ -1,4 +1,4 @@
-import { Cliente, Servicio, PrecioCliente, Empleado, Conduce } from '../types';
+import { Cliente, Servicio, PrecioCliente, Empleado, Conduce, EquipoVehiculo } from '../types';
 
 export const CLIENTES_INICIALES: Cliente[] = [
   {
@@ -130,6 +130,13 @@ export const EMPLEADOS_INICIALES: Empleado[] = [
   { id: 'emp-5', nombre: 'Miguel Ángel Torres', cedula: '012-0038419-4', rol: 'chequeador', telefono: '(809) 481-2093' },
   { id: 'emp-6', nombre: 'Santo Reyes Guzmán', cedula: '001-0029381-0', rol: 'chequeador', telefono: '(829) 304-9182' },
   { id: 'emp-7', nombre: 'Lidia María Rosario', cedula: '001-1827364-9', rol: 'administrativo', telefono: '(809) 530-1000' }
+];
+
+export const EQUIPOS_VEHICULOS_INICIALES: EquipoVehiculo[] = [
+  { id: 'eq-1', nombre: 'Retroexcavadora CAT 320 (#01)', tipo: 'equipo_pesado', placa: 'EQUIP-01', descripcion: 'Retroexcavadora de oruga para excavaciones' },
+  { id: 'eq-2', nombre: 'Pala Cargadora CAT 950 (#02)', tipo: 'equipo_pesado', placa: 'EQUIP-02', descripcion: 'Cargador frontal de neumáticos' },
+  { id: 'eq-3', nombre: 'Camión Mack 14m³', tipo: 'camion_volteo', placa: 'L-394810', capacidadM3: 14, descripcion: 'Camión de volteo para acarreo y m³' },
+  { id: 'eq-4', nombre: 'Camión International 16m³', tipo: 'camion_volteo', placa: 'L-291048', capacidadM3: 16, descripcion: 'Camión de volteo gran capacidad' }
 ];
 
 export const CONDUCES_INICIALES: Conduce[] = [

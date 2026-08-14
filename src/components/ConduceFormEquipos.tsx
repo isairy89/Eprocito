@@ -3,7 +3,7 @@ import {
   Cliente,
   Servicio,
   Empleado,
-  Conduce,
+  EquipoVehiculo,
   ConduceEquipoPesado,
   TurnoHorario
 } from '../types';
@@ -14,83 +14,73 @@ interface ConduceFormEquiposProps {
   clientes: Cliente[];
   servicios: Servicio[];
   empleados: Empleado[];
-  conduces: Conduce[];
+  equipos?: EquipoVehiculo[];
   onSave: (conduce: ConduceEquipoPesado) => void;
   onCancel: () => void;
   conduceExistente?: ConduceEquipoPesado | null;
-}
-
-/**
- * Genera el siguiente número de conduce de equipo pesado (EP-XXXXX)
- * basándose en el máximo existente, evitando colisiones.
- */
-function generarSiguienteNumeroEP(conduces: Conduce[]): string {
-  const numerosExistentes = conduces
-    .filter((c) => c.tipo === 'equipo_pesado')
-    .map((c) => {
-      const match = c.numeroConduce.match(/EP-0*(\d+)$/);
-      return match ? parseInt(match[1], 10) : 0;
-    });
-  const maxNumero = numerosExistentes.length > 0 ? Math.max(...numerosExistentes) : 100;
-  const siguiente = maxNumero + 1;
-  return `EP-${String(siguiente).padStart(5, '0')}`;
 }
 
 export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
   clientes,
   servicios,
   empleados,
-  conduces,
+  equipos = [],
   onSave,
   onCancel,
   conduceExistente
 }) => {
-  // Filtrar servicios que aplican para equipos por hora
+  // Filtrar solo servicios que aplican para equipos por hora
   const serviciosEquipos = servicios.filter(
     (s) => s.categoria === 'equipo_pesado' || s.unidadCobro === 'hora'
   );
 
-  // Vehículos asignados a empleados que no tienen servicio en catálogo
-  // (para cubrir el caso de equipo creado como empleado con vehiculoAsignado, o un equipo registrado directamente con su placa)
-  const vehiculosDeEmpleados = useMemo(() => {
-    const nombresServiciosCatalogo = new Set(serviciosEquipos.map((s) => s.nombre.toLowerCase().trim()));
-    return empleados
-      .filter((e) => {
-        const nombreEquipo = (e.vehiculoAsignado || e.nombre).toLowerCase().trim();
-        const tieneEquipo = e.vehiculoAsignado || e.placaAsignada;
-        return tieneEquipo && !nombresServiciosCatalogo.has(nombreEquipo);
-      })
-      .map((e) => ({
-        id: `emp-veh-${e.id}`,
-        nombre: e.vehiculoAsignado || e.nombre,
-        placa: e.placaAsignada || '',
-        esDeEmpleado: true
-      }));
-  }, [empleados, serviciosEquipos]);
+  // Lista combinada de opciones de equipos pesados disponibles (desde catálogo de equipos y servicios)
+  const listaEquiposPesados = useMemo(() => {
+    const items: Array<{
+      id: string;
+      nombre: string;
+      placa?: string;
+      precioBase: number;
+      servicioId: string;
+    }> = [];
+    const nombresVistos = new Set<string>();
 
-  // Equipos registrados en conduces anteriores que no están en catálogo ni asignados a empleados
-  const equiposDeConduces = useMemo(() => {
-    const nombresExistentes = new Set([
-      ...serviciosEquipos.map(s => s.nombre.toLowerCase().trim()),
-      ...vehiculosDeEmpleados.map(v => v.nombre.toLowerCase().trim())
-    ]);
+    // 1. Agregar servicios de equipo pesado
+    serviciosEquipos.forEach((s) => {
+      const eqMatch = equipos.find(
+        (e) => e.nombre.toLowerCase() === s.nombre.toLowerCase() || s.id === `serv-${e.id}`
+      );
+      nombresVistos.add(s.nombre.toLowerCase());
+      items.push({
+        id: s.id,
+        nombre: s.nombre,
+        placa: eqMatch?.placa,
+        precioBase: s.precioBase,
+        servicioId: s.id
+      });
+    });
 
-    const mapa = new Map<string, { id: string; nombre: string; placa: string }>();
-
-    conduces.forEach(c => {
-      if (c.tipo === 'equipo_pesado' && c.equipoAsignado) {
-        const nombreLower = c.equipoAsignado.toLowerCase().trim();
-        if (!nombresExistentes.has(nombreLower) && !mapa.has(nombreLower)) {
-          mapa.set(nombreLower, {
-            id: `hist-${c.id}`,
-            nombre: c.equipoAsignado,
-            placa: c.placa || ''
+    // 2. Agregar equipos pesados registrados que no estén duplicados
+    equipos
+      .filter((e) => e.tipo === 'equipo_pesado' || e.tipo === 'vehiculo_liviano')
+      .forEach((eq) => {
+        if (!nombresVistos.has(eq.nombre.toLowerCase())) {
+          nombresVistos.add(eq.nombre.toLowerCase());
+          const sMatch = servicios.find(
+            (s) => s.nombre.toLowerCase() === eq.nombre.toLowerCase() || s.id === `serv-${eq.id}`
+          );
+          items.push({
+            id: eq.id,
+            nombre: eq.nombre,
+            placa: eq.placa,
+            precioBase: sMatch ? sMatch.precioBase : 2500,
+            servicioId: sMatch ? sMatch.id : `serv-${eq.id}`
           });
         }
-      }
-    });
-    return Array.from(mapa.values());
-  }, [conduces, serviciosEquipos, vehiculosDeEmpleados]);
+      });
+
+    return items;
+  }, [serviciosEquipos, equipos, servicios]);
 
   const operadores = empleados.filter((e) => e.rol === 'operador' || e.rol === 'chofer');
   const chequeadores = empleados.filter((e) => e.rol === 'chequeador' || e.rol === 'administrativo');
@@ -106,18 +96,18 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
   const [equipoAsignado, setEquipoAsignado] = useState<string>('');
   const [placa, setPlaca] = useState<string>('');
 
-  // Turnos — inicio/fin vacíos para que el usuario los llene conscientemente
-  const [mananaInicio, setMananaInicio] = useState<string>('');
-  const [mananaFin, setMananaFin] = useState<string>('');
+  // Turnos
+  const [mananaInicio, setMananaInicio] = useState<string>('08:00');
+  const [mananaFin, setMananaFin] = useState<string>('12:00');
   
-  const [tardeInicio, setTardeInicio] = useState<string>('');
-  const [tardeFin, setTardeFin] = useState<string>('');
+  const [tardeInicio, setTardeInicio] = useState<string>('13:00');
+  const [tardeFin, setTardeFin] = useState<string>('17:00');
   
   const [nocheInicio, setNocheInicio] = useState<string>('');
   const [nocheFin, setNocheFin] = useState<string>('');
 
   // Horas y Precio
-  const [totalHorasPagar, setTotalHorasPagar] = useState<number>(0);
+  const [totalHorasPagar, setTotalHorasPagar] = useState<number>(8);
   const [precioPorHora, setPrecioPorHora] = useState<number>(0);
 
   // Empleados asignados
@@ -128,7 +118,6 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
   // Mensajes de Validación
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Flag para evitar actualizar precio/equipo al cargar un conduce existente
   const isInitialEditLoad = useRef<boolean>(!!conduceExistente);
 
   // Autogenerar Número de Conduce al crear nuevo o cargar datos al editar
@@ -164,10 +153,10 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
       setObservaciones(conduceExistente.observaciones || '');
     } else {
       isInitialEditLoad.current = false;
-      // Generar número consecutivo basado en conduces existentes
-      setNumeroConduce(generarSiguienteNumeroEP(conduces));
+      const randomNum = Math.floor(100 + Math.random() * 900);
+      setNumeroConduce(`EP-00${randomNum}`);
     }
-  }, [conduceExistente, conduces]);
+  }, [conduceExistente]);
 
   // Al seleccionar cliente, cargar dirección predeterminada y teléfono
   useEffect(() => {
@@ -180,63 +169,44 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
       // Actualizar precio solo si el usuario interactúa activamente (no en la carga inicial de edición)
       if (servicioId && !isInitialEditLoad.current) {
         const precioDinamico = StorageService.obtenerPrecioAcordado(clienteId, servicioId);
-        setPrecioPorHora(precioDinamico);
+        if (precioDinamico > 0) {
+          setPrecioPorHora(precioDinamico);
+        }
       }
     }
   }, [clienteId, clientes]);
 
-  // Al seleccionar servicio del catálogo, actualizar equipo asignado y precio por hora
-  useEffect(() => {
-    if (servicioId) {
-      // Es un servicio del catálogo
-      if (servicioId.startsWith('emp-veh-')) {
-        // Es un vehículo de empleado — no buscar en servicios del catálogo
-        const empId = servicioId.replace('emp-veh-', '');
-        const emp = empleados.find((e) => e.id === empId);
-        if (emp) {
-          if (!isInitialEditLoad.current) {
-            setEquipoAsignado(emp.vehiculoAsignado || emp.nombre);
-            setPlaca(emp.placaAsignada || '');
-            // No hay precio en catálogo para vehículo de empleado — mantener precio en 0 para forzar ingreso manual
-            if (!clienteId) setPrecioPorHora(0);
-          }
-        }
-        // Siempre desactivar flag al terminar
-        isInitialEditLoad.current = false;
-        return;
-      }
-      
-      if (servicioId.startsWith('hist-')) {
-        // Es un equipo usado en un conduce anterior
-        const condId = servicioId.replace('hist-', '');
-        const pastConduce = conduces.find((c) => c.id === condId) as ConduceEquipoPesado;
-        if (pastConduce) {
-          if (!isInitialEditLoad.current) {
-            setEquipoAsignado(pastConduce.equipoAsignado || '');
-            setPlaca(pastConduce.placa || '');
-            if (!clienteId) setPrecioPorHora(0);
-          }
-        }
-        isInitialEditLoad.current = false;
-        return;
+  // Manejar selección de equipo / servicio
+  const handleSeleccionarEquipo = (selectedVal: string) => {
+    if (!selectedVal) {
+      setServicioId('');
+      setEquipoAsignado('');
+      return;
+    }
+
+    const item = listaEquiposPesados.find(
+      (it) => it.servicioId === selectedVal || it.id === selectedVal || it.nombre === selectedVal
+    );
+
+    if (item) {
+      setServicioId(item.servicioId);
+      setEquipoAsignado(item.nombre);
+      if (item.placa) {
+        setPlaca(item.placa);
       }
 
-      const serv = servicios.find((s) => s.id === servicioId);
-      if (serv) {
-        if (!isInitialEditLoad.current) {
-          setEquipoAsignado(serv.nombre);
-          if (clienteId) {
-            const precioDinamico = StorageService.obtenerPrecioAcordado(clienteId, servicioId);
-            setPrecioPorHora(precioDinamico);
-          } else {
-            setPrecioPorHora(serv.precioBase);
-          }
+      if (!isInitialEditLoad.current) {
+        if (clienteId) {
+          const precioDinamico = StorageService.obtenerPrecioAcordado(clienteId, item.servicioId);
+          setPrecioPorHora(precioDinamico || item.precioBase);
+        } else {
+          setPrecioPorHora(item.precioBase);
         }
+      } else {
+        isInitialEditLoad.current = false;
       }
-      // Siempre desactivar el flag al terminar, independientemente de si serv existe
-      isInitialEditLoad.current = false;
     }
-  }, [servicioId, clienteId, servicios, empleados, conduces]);
+  };
 
   // Cálculo de Horas por Turno
   const calcularHorasTurno = (inicio: string, fin: string): number => {
@@ -254,7 +224,7 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
   const horasNoche = calcularHorasTurno(nocheInicio, nocheFin);
   const subtotalHorasCalculado = horasManana + horasTarde + horasNoche;
 
-  // Actualizar automáticamente totalHorasPagar cuando subtotal cambia (solo en modo nuevo)
+  // Actualizar automáticamente totalHorasPagar cuando subtotal cambia (si no fue modificado manualmente a 0)
   useEffect(() => {
     if (!conduceExistente && subtotalHorasCalculado > 0) {
       setTotalHorasPagar(subtotalHorasCalculado);
@@ -308,7 +278,7 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
       clienteNombre: clienteObj ? clienteObj.nombre : 'Cliente Desconocido',
       direccionProyecto,
       telefonoContacto,
-      servicioId: servicioId.startsWith('emp-veh-') || servicioId.startsWith('hist-') ? '' : servicioId,
+      servicioId,
       equipoAsignado,
       placa: placa.trim() || undefined,
       turnoManana: horasManana > 0 ? { inicio: mananaInicio, fin: mananaFin, horas: horasManana } : undefined,
@@ -374,7 +344,7 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
                 value={numeroConduce}
                 onChange={(e) => setNumeroConduce(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-mono font-bold focus:border-amber-500"
-                placeholder="EP-00101"
+                placeholder="EP-00100"
               />
             </div>
 
@@ -430,46 +400,35 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
 
         {/* Sección 2: Selección de Equipo */}
         <div className="bg-slate-800/40 border border-slate-800 p-4 rounded-xl space-y-4">
-          <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-            2. Asignación de Equipo Pesado
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Tractor className="w-4 h-4" /> 2. Asignación de Equipo Pesado
+            </h3>
+            <span className="text-[11px] text-slate-400">
+              Catálogo sincronizado con Maquinaria y Servicios
+            </span>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
             <div>
               <label className="block text-slate-300 mb-1 font-medium">Equipo / Servicio *</label>
               <select
-                value={servicioId}
-                onChange={(e) => setServicioId(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:border-amber-500"
+                value={
+                  servicioId ||
+                  listaEquiposPesados.find(
+                    (e) => e.nombre.toLowerCase() === equipoAsignado.toLowerCase()
+                  )?.servicioId ||
+                  ''
+                }
+                onChange={(e) => handleSeleccionarEquipo(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:border-amber-500 font-medium"
               >
-                <option value="">-- Seleccionar Equipo --</option>
-                {serviciosEquipos.length > 0 && (
-                  <optgroup label="Catálogo de Servicios">
-                    {serviciosEquipos.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.nombre} (${s.precioBase.toLocaleString('es-DO')}/hr base)
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-                {vehiculosDeEmpleados.length > 0 && (
-                  <optgroup label="Equipos/Vehículos Asignados a Operadores">
-                    {vehiculosDeEmpleados.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.nombre}{v.placa ? ` — Placa: ${v.placa}` : ''}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-                {equiposDeConduces.length > 0 && (
-                  <optgroup label="Historial de Equipos Anteriores">
-                    {equiposDeConduces.map((eq) => (
-                      <option key={eq.id} value={eq.id}>
-                        {eq.nombre}{eq.placa ? ` — Placa: ${eq.placa}` : ''}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
+                <option value="">-- Seleccionar de Catálogo de Equipos --</option>
+                {listaEquiposPesados.map((s) => (
+                  <option key={s.id} value={s.servicioId || s.id}>
+                    {s.nombre} {s.placa ? `[Placa: ${s.placa}]` : ''} (${s.precioBase.toLocaleString('es-DO')}/hr base)
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -480,7 +439,7 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
                 value={equipoAsignado}
                 onChange={(e) => setEquipoAsignado(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:border-amber-500"
-                placeholder="Ej. Retroexcavadora CAT 320 (#01)"
+                placeholder="Ej. Retroexcavadora CAT 320 (#02)"
               />
             </div>
 
@@ -488,11 +447,17 @@ export const ConduceFormEquipos: React.FC<ConduceFormEquiposProps> = ({
               <label className="block text-slate-300 mb-1 font-medium">Placa del Equipo (Opcional)</label>
               <input
                 type="text"
+                list="placas-sugeridas-equipos"
                 value={placa}
                 onChange={(e) => setPlaca(e.target.value.toUpperCase())}
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-mono uppercase focus:border-amber-500"
-                placeholder="Ej. EQUIP-01"
+                placeholder="Ej. EQUIP-02"
               />
+              <datalist id="placas-sugeridas-equipos">
+                {equipos.map((eq) => eq.placa && (
+                  <option key={eq.id} value={eq.placa}>{eq.nombre}</option>
+                ))}
+              </datalist>
             </div>
           </div>
         </div>

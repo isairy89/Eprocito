@@ -38,7 +38,15 @@ export interface Empleado {
   telefono?: string;
   vehiculoAsignado?: string;
   placaAsignada?: string;
-  salarioBase?: number;
+}
+
+export interface EquipoVehiculo {
+  id: string;
+  nombre: string;
+  tipo: 'equipo_pesado' | 'camion_volteo' | 'vehiculo_liviano';
+  placa: string;
+  capacidadM3?: number;
+  descripcion?: string;
 }
 
 // Materiales estándar para Conduce E

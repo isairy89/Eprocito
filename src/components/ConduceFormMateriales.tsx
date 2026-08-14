@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Cliente,
   Servicio,
   Empleado,
-  Conduce,
+  EquipoVehiculo,
   ConduceMaterial,
   DetalleMaterialConduce,
   MATERIALES_ESTANDAR,
@@ -16,33 +16,17 @@ interface ConduceFormMaterialesProps {
   clientes: Cliente[];
   servicios: Servicio[];
   empleados: Empleado[];
-  conduces: Conduce[];
+  equipos?: EquipoVehiculo[];
   onSave: (conduce: ConduceMaterial) => void;
   onCancel: () => void;
   conduceExistente?: ConduceMaterial | null;
-}
-
-/**
- * Genera el siguiente número de conduce de materiales (E-XXXXX)
- * basándose en el máximo existente, evitando colisiones.
- */
-function generarSiguienteNumeroE(conduces: Conduce[]): string {
-  const numerosExistentes = conduces
-    .filter((c) => c.tipo === 'materiales')
-    .map((c) => {
-      const match = c.numeroConduce.match(/E-0*(\d+)$/);
-      return match ? parseInt(match[1], 10) : 0;
-    });
-  const maxNumero = numerosExistentes.length > 0 ? Math.max(...numerosExistentes) : 500;
-  const siguiente = maxNumero + 1;
-  return `E-${String(siguiente).padStart(5, '0')}`;
 }
 
 export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
   clientes,
   servicios,
   empleados,
-  conduces,
+  equipos = [],
   onSave,
   onCancel,
   conduceExistente
@@ -61,27 +45,22 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
   const [recibidoConforme, setRecibidoConforme] = useState<string>('');
   const [observaciones, setObservaciones] = useState<string>('');
 
-  // Fila inicial vacía: sin datos ficticios
-  const filaVacia: DetalleMaterialConduce = {
-    material: MATERIALES_ESTANDAR[0],
-    cantidad: 0,
-    unidad: 'metro',
-    precioUnitario: 0,
-    subtotal: 0
-  };
-
-  // Filas de Detalle de Materiales — sin datos ficticios por defecto
-  const [detalles, setDetalles] = useState<DetalleMaterialConduce[]>([{ ...filaVacia }]);
+  // Filas de Detalle de Materiales
+  const [detalles, setDetalles] = useState<DetalleMaterialConduce[]>([
+    {
+      material: 'Sub-base',
+      cantidad: 28,
+      unidad: 'metro',
+      precioUnitario: 650,
+      subtotal: 18200
+    }
+  ]);
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  // Flag para evitar autocompletar placa durante carga inicial de edición
-  const isInitialLoad = useRef<boolean>(!!conduceExistente);
 
   // Inicialización
   useEffect(() => {
     if (conduceExistente) {
-      isInitialLoad.current = true;
       setNumeroConduce(conduceExistente.numeroConduce);
       setFecha(conduceExistente.fecha);
       setClienteId(conduceExistente.clienteId);
@@ -93,11 +72,10 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
       setDetalles(conduceExistente.detalles);
       setObservaciones(conduceExistente.observaciones || '');
     } else {
-      isInitialLoad.current = false;
-      // Generar número consecutivo basado en conduces existentes
-      setNumeroConduce(generarSiguienteNumeroE(conduces));
+      const randomNum = Math.floor(100 + Math.random() * 900);
+      setNumeroConduce(`E-00${randomNum}`);
     }
-  }, [conduceExistente, conduces]);
+  }, [conduceExistente]);
 
   // Al cambiar cliente
   useEffect(() => {
@@ -110,25 +88,26 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
   }, [clienteId, clientes]);
 
   // Al seleccionar chofer, autocompletar placa si tiene asignada
-  // Usar ref para evitar sobreescribir la placa original al cargar en modo edición
   useEffect(() => {
-    if (choferNombre && !isInitialLoad.current) {
+    if (choferNombre) {
       const emp = choferes.find((e) => e.nombre === choferNombre);
       if (emp && emp.placaAsignada && !placaCamion) {
         setPlacaCamion(emp.placaAsignada);
       }
     }
-    // Desactivar flag después del primer dispatch del efecto en modo edición
-    if (isInitialLoad.current) {
-      isInitialLoad.current = false;
-    }
-  }, [choferNombre]);
+  }, [choferNombre, choferes]);
 
-  // Agregar nueva fila de material — sin datos ficticios
+  // Agregar nueva fila de material
   const agregarFilaMaterial = () => {
     setDetalles([
       ...detalles,
-      { ...filaVacia }
+      {
+        material: MATERIALES_ESTANDAR[0],
+        cantidad: 10,
+        unidad: 'metro',
+        precioUnitario: 800,
+        subtotal: 10 * 800
+      }
     ]);
   };
 
@@ -164,6 +143,7 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
   // Totales generales:
   // - 'metro': aporta a totalMetros, 0 viajes
   // - 'viaje': aporta a totalViajes, 0 metros
+  // - 'hora': aporta a horas (no convierte metros a viajes usando la capacidad del camión)
   const totalMetrosCalculado = detalles
     .filter((d) => d.unidad === 'metro')
     .reduce((sum, d) => sum + d.cantidad, 0);
@@ -287,7 +267,7 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
                 value={numeroConduce}
                 onChange={(e) => setNumeroConduce(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-mono font-bold focus:border-amber-500"
-                placeholder="E-00501"
+                placeholder="E-00500"
               />
             </div>
 
@@ -330,9 +310,47 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
 
         {/* Sección 2: Datos del Camión y Transporte */}
         <div className="bg-slate-800/40 border border-slate-800 p-4 rounded-xl space-y-4">
-          <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-            2. Información del Vehículo y Chofer
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Truck className="w-4 h-4" /> 2. Información del Vehículo y Chofer
+            </h3>
+            <span className="text-[11px] text-slate-400">
+              Catálogo sincronizado con Camiones de Volteo
+            </span>
+          </div>
+
+          {/* Selector Rápido de Camiones Registrados */}
+          {equipos.filter((e) => e.tipo === 'camion_volteo' || e.capacidadM3).length > 0 && (
+            <div className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+              <label className="block text-slate-400 text-[11px] font-medium mb-1.5">
+                Seleccionar Camión / Vehículo Registrado:
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {equipos
+                  .filter((e) => e.tipo === 'camion_volteo' || e.capacidadM3)
+                  .map((eq) => (
+                    <button
+                      key={eq.id}
+                      type="button"
+                      onClick={() => {
+                        setPlacaCamion(eq.placa || '');
+                        if (eq.capacidadM3) setCapacidadCamionM3(eq.capacidadM3);
+                        const emp = empleados.find(
+                          (em) => em.placaAsignada === eq.placa || em.vehiculoAsignado === eq.nombre
+                        );
+                        if (emp && !choferNombre) setChoferNombre(emp.nombre);
+                      }}
+                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Truck className="w-3 h-3 text-sky-400" />
+                      <span className="font-medium text-white">{eq.nombre}</span>
+                      {eq.placa && <span className="font-mono text-amber-400 text-[10px]">[{eq.placa}]</span>}
+                      {eq.capacidadM3 && <span className="text-slate-400 text-[10px]">({eq.capacidadM3} m³)</span>}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
             <div>
@@ -349,11 +367,24 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
               <label className="block text-slate-300 mb-1 font-medium">Placa del Camión *</label>
               <input
                 type="text"
+                list="placas-camiones-sugeridas"
                 value={placaCamion}
-                onChange={(e) => setPlacaCamion(e.target.value.toUpperCase())}
+                onChange={(e) => {
+                  const val = e.target.value.toUpperCase();
+                  setPlacaCamion(val);
+                  const match = equipos.find((eq) => eq.placa.toUpperCase() === val);
+                  if (match?.capacidadM3) {
+                    setCapacidadCamionM3(match.capacidadM3);
+                  }
+                }}
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-mono uppercase focus:border-amber-500"
                 placeholder="L-000000"
               />
+              <datalist id="placas-camiones-sugeridas">
+                {equipos.map((eq) => eq.placa && (
+                  <option key={eq.id} value={eq.placa}>{eq.nombre} {eq.capacidadM3 ? `(${eq.capacidadM3} m³)` : ''}</option>
+                ))}
+              </datalist>
             </div>
 
             <div>
@@ -444,22 +475,19 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
                       <input
                         type="number"
                         step="0.1"
-                        min="0"
-                        value={item.cantidad === 0 ? '' : item.cantidad}
+                        min="0.1"
+                        value={item.cantidad}
                         onChange={(e) => actualizarFila(idx, 'cantidad', parseFloat(e.target.value) || 0)}
                         className="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-white text-right font-mono font-bold"
-                        placeholder="0"
                       />
                     </td>
 
                     <td className="p-2 text-right">
                       <input
                         type="number"
-                        min="0"
-                        value={item.precioUnitario === 0 ? '' : item.precioUnitario}
+                        value={item.precioUnitario}
                         onChange={(e) => actualizarFila(idx, 'precioUnitario', parseFloat(e.target.value) || 0)}
                         className="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-white text-right font-mono"
-                        placeholder="0"
                       />
                     </td>
 

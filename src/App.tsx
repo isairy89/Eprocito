@@ -5,6 +5,7 @@ import {
   Servicio,
   PrecioCliente,
   Empleado,
+  EquipoVehiculo,
   Conduce,
   ConduceEquipoPesado,
   ConduceMaterial,
@@ -21,6 +22,9 @@ import { ConduceFormEquipos } from './components/ConduceFormEquipos';
 import { ConduceFormMateriales } from './components/ConduceFormMateriales';
 import { ConducesList } from './components/ConducesList';
 import { ServiciosPreciosManager } from './components/ServiciosPreciosManager';
+import { ClientesManager } from './components/ClientesManager';
+import { EmpleadosManager } from './components/EmpleadosManager';
+import { EquiposVehiculosManager } from './components/EquiposVehiculosManager';
 import { ReporteClientes } from './components/ReporteClientes';
 import { ReporteNomina } from './components/ReporteNomina';
 import { ControlGasoilManager } from './components/ControlGasoilManager';
@@ -33,6 +37,7 @@ export default function App() {
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [preciosCliente, setPreciosCliente] = useState<PrecioCliente[]>([]);
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
+  const [equiposVehiculos, setEquiposVehiculos] = useState<EquipoVehiculo[]>([]);
   const [conduces, setConduces] = useState<Conduce[]>([]);
 
   // Estados Módulo Gasoil
@@ -57,6 +62,7 @@ export default function App() {
     setServicios(StorageService.getServicios());
     setPreciosCliente(StorageService.getPreciosCliente());
     setEmpleados(StorageService.getEmpleados());
+    setEquiposVehiculos(StorageService.getEquiposVehiculos());
     setConduces(StorageService.getConduces());
 
     setConfigGasoil(StorageService.getConfiguracionGasoil());
@@ -143,6 +149,84 @@ export default function App() {
     StorageService.saveClientes(copia);
   };
 
+  // Eliminar Cliente
+  const handleDeleteCliente = (id: string) => {
+    const copia = clientes.filter((c) => c.id !== id);
+    setClientes(copia);
+    StorageService.saveClientes(copia);
+  };
+
+  // Guardar Empleado
+  const handleSaveEmpleado = (emp: Empleado) => {
+    const copia = [...empleados];
+    const idx = copia.findIndex((e) => e.id === emp.id);
+    if (idx >= 0) {
+      copia[idx] = emp;
+    } else {
+      copia.push(emp);
+    }
+    setEmpleados(copia);
+    StorageService.saveEmpleados(copia);
+  };
+
+  // Eliminar Empleado
+  const handleDeleteEmpleado = (id: string) => {
+    const copia = empleados.filter((e) => e.id !== id);
+    setEmpleados(copia);
+    StorageService.saveEmpleados(copia);
+  };
+
+  // Guardar Equipo / Vehículo
+  const handleSaveEquipo = (eq: EquipoVehiculo) => {
+    const copiaEquipos = [...equiposVehiculos];
+    const idx = copiaEquipos.findIndex((e) => e.id === eq.id);
+    const prevEq = idx >= 0 ? copiaEquipos[idx] : null;
+
+    if (idx >= 0) {
+      copiaEquipos[idx] = eq;
+    } else {
+      copiaEquipos.push(eq);
+    }
+    setEquiposVehiculos(copiaEquipos);
+    StorageService.saveEquiposVehiculos(copiaEquipos);
+
+    // Sincronizar automáticamente con el catálogo de Servicios
+    const copiaServicios = [...servicios];
+    const servIdx = copiaServicios.findIndex(
+      (s) => s.id === `serv-${eq.id}` || s.nombre.toLowerCase() === (prevEq ? prevEq.nombre.toLowerCase() : eq.nombre.toLowerCase())
+    );
+
+    if (servIdx >= 0) {
+      copiaServicios[servIdx] = {
+        ...copiaServicios[servIdx],
+        nombre: eq.nombre,
+        categoria: eq.tipo === 'camion_volteo' ? 'material' : 'equipo_pesado',
+        unidadCobro: eq.tipo === 'camion_volteo' ? 'viaje' : 'hora'
+      };
+      setServicios(copiaServicios);
+      StorageService.saveServicios(copiaServicios);
+    } else {
+      const nuevoServicio: Servicio = {
+        id: `serv-${eq.id}`,
+        nombre: eq.nombre,
+        categoria: eq.tipo === 'camion_volteo' ? 'material' : 'equipo_pesado',
+        unidadCobro: eq.tipo === 'camion_volteo' ? 'viaje' : 'hora',
+        precioBase: eq.tipo === 'camion_volteo' ? 4500 : 2500,
+        descripcion: eq.descripcion || `Maquinaria / Equipo ${eq.nombre}`
+      };
+      copiaServicios.push(nuevoServicio);
+      setServicios(copiaServicios);
+      StorageService.saveServicios(copiaServicios);
+    }
+  };
+
+  // Eliminar Equipo / Vehículo
+  const handleDeleteEquipo = (id: string) => {
+    const copia = equiposVehiculos.filter((e) => e.id !== id);
+    setEquiposVehiculos(copia);
+    StorageService.saveEquiposVehiculos(copia);
+  };
+
   // Guardar Servicio Base
   const handleSaveServicio = (serv: Servicio) => {
     const copia = [...servicios];
@@ -177,26 +261,6 @@ export default function App() {
     const copia = preciosCliente.filter((p) => p.id !== id);
     setPreciosCliente(copia);
     StorageService.savePreciosCliente(copia);
-  };
-
-  // Guardar Empleado (nuevo o edición)
-  const handleSaveEmpleado = (emp: Empleado) => {
-    const copia = [...empleados];
-    const idx = copia.findIndex((e) => e.id === emp.id);
-    if (idx >= 0) {
-      copia[idx] = emp;
-    } else {
-      copia.push(emp);
-    }
-    setEmpleados(copia);
-    StorageService.saveEmpleados(copia);
-  };
-
-  // Eliminar Empleado
-  const handleDeleteEmpleado = (id: string) => {
-    const copia = empleados.filter((e) => e.id !== id);
-    setEmpleados(copia);
-    StorageService.saveEmpleados(copia);
   };
 
   // Manejadores Gasoil
@@ -311,6 +375,31 @@ export default function App() {
             </div>
           )}
           
+          {activeTab === 'clientes' && (
+            <ClientesManager
+              clientes={clientes}
+              onSaveCliente={handleSaveCliente}
+              onDeleteCliente={handleDeleteCliente}
+              onNavigateToPrecios={() => setActiveTab('servicios_precios')}
+            />
+          )}
+
+          {activeTab === 'empleados' && (
+            <EmpleadosManager
+              empleados={empleados}
+              onSaveEmpleado={handleSaveEmpleado}
+              onDeleteEmpleado={handleDeleteEmpleado}
+            />
+          )}
+
+          {activeTab === 'equipos_vehiculos' && (
+            <EquiposVehiculosManager
+              equipos={equiposVehiculos}
+              onSaveEquipo={handleSaveEquipo}
+              onDeleteEquipo={handleDeleteEquipo}
+            />
+          )}
+
           {activeTab === 'produccion' && (
             <ProduccionDashboard
               conduces={conduces}
@@ -327,7 +416,7 @@ export default function App() {
               clientes={clientes}
               servicios={servicios}
               empleados={empleados}
-              conduces={conduces}
+              equipos={equiposVehiculos}
               conduceExistente={conduceEnEdicion?.tipo === 'equipo_pesado' ? (conduceEnEdicion as ConduceEquipoPesado) : null}
               onSave={handleSaveConduceEquipo}
               onCancel={() => {
@@ -342,7 +431,7 @@ export default function App() {
               clientes={clientes}
               servicios={servicios}
               empleados={empleados}
-              conduces={conduces}
+              equipos={equiposVehiculos}
               conduceExistente={conduceEnEdicion?.tipo === 'materiales' ? (conduceEnEdicion as ConduceMaterial) : null}
               onSave={handleSaveConduceMaterial}
               onCancel={() => {
@@ -378,6 +467,7 @@ export default function App() {
               conduces={conduces}
               servicios={servicios}
               empleados={empleados}
+              equipos={equiposVehiculos}
               onSaveConfig={handleSaveConfigGasoil}
               onSaveCompra={handleSaveCompraGasoil}
               onDeleteCompra={handleDeleteCompraGasoil}
@@ -392,14 +482,11 @@ export default function App() {
             <ServiciosPreciosManager
               servicios={servicios}
               clientes={clientes}
-              empleados={empleados}
               preciosCliente={preciosCliente}
               onSaveServicio={handleSaveServicio}
               onSaveCliente={handleSaveCliente}
               onSavePrecioCliente={handleSavePrecioCliente}
               onDeletePrecioCliente={handleDeletePrecioCliente}
-              onSaveEmpleado={handleSaveEmpleado}
-              onDeleteEmpleado={handleDeleteEmpleado}
             />
           )}
 
