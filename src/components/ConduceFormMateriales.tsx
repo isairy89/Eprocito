@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Cliente,
   Servicio,
@@ -32,6 +32,35 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
   conduceExistente
 }) => {
   const choferes = empleados.filter((e) => e.rol === 'chofer' || e.rol === 'operador');
+
+  // Clasificación de vehículos disponibles en tiempo real desde el catálogo
+  const camionesVolteo = useMemo(() => {
+    return equipos.filter((e) => e.tipo === 'camion_volteo' || (e.capacidadM3 && e.capacidadM3 > 0));
+  }, [equipos]);
+
+  const otrosVehiculos = useMemo(() => {
+    return equipos.filter((e) => e.tipo !== 'camion_volteo' && (!e.capacidadM3 || e.capacidadM3 <= 0));
+  }, [equipos]);
+
+  // Manejador para seleccionar camión desde desplegable o botones rápidos
+  const handleSeleccionarCamion = (eqId: string) => {
+    if (!eqId) return;
+    const eq = equipos.find((e) => e.id === eqId);
+    if (eq) {
+      setPlacaCamion(eq.placa || '');
+      if (eq.capacidadM3 && (!capacidadCamionM3 || capacidadCamionM3 === 0)) {
+        setCapacidadCamionM3(eq.capacidadM3);
+      }
+      const emp = empleados.find(
+        (em) =>
+          (eq.placa && em.placaAsignada?.trim().toUpperCase() === eq.placa.trim().toUpperCase()) ||
+          (em.vehiculoAsignado && em.vehiculoAsignado.toLowerCase().trim() === eq.nombre.toLowerCase().trim())
+      );
+      if (emp && !choferNombre) {
+        setChoferNombre(emp.nombre);
+      }
+    }
+  };
 
   // Estado del Formulario
   const [numeroConduce, setNumeroConduce] = useState<string>('');
@@ -332,41 +361,87 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
               <Truck className="w-4 h-4" /> 2. Información del Vehículo y Chofer
             </h3>
             <span className="text-[11px] text-slate-400">
-              Catálogo sincronizado con Camiones de Volteo
+              Catálogo sincronizado en tiempo real ({equipos.length} {equipos.length === 1 ? 'unidad' : 'unidades'})
             </span>
           </div>
 
-          {/* Selector Rápido de Camiones Registrados */}
-          {equipos.filter((e) => e.tipo === 'camion_volteo' || e.capacidadM3).length > 0 && (
+          {/* Menú Desplegable de Selección de Camión / Vehículo */}
+          <div>
+            <label className="block text-slate-300 mb-1 font-medium text-xs">
+              Seleccionar Camión / Unidad de Transporte (Catálogo):
+            </label>
+            <select
+              value={
+                equipos.find(
+                  (e) =>
+                    placaCamion &&
+                    e.placa &&
+                    e.placa.trim().toUpperCase() === placaCamion.trim().toUpperCase()
+                )?.id || ''
+              }
+              onChange={(e) => handleSeleccionarCamion(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:border-amber-500 font-medium text-xs cursor-pointer"
+            >
+              <option value="">-- Seleccionar Camión / Vehículo del Catálogo --</option>
+              {camionesVolteo.length > 0 && (
+                <optgroup label="🚛 Camiones de Volteo & Acarreo (m³ / Viajes)">
+                  {camionesVolteo.map((eq) => (
+                    <option key={eq.id} value={eq.id}>
+                      {eq.nombre} {eq.placa ? `[Placa: ${eq.placa}]` : ''} {eq.capacidadM3 ? `(${eq.capacidadM3} m³)` : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {otrosVehiculos.length > 0 && (
+                <optgroup label="🚜 Otros Equipos y Vehículos">
+                  {otrosVehiculos.map((eq) => (
+                    <option key={eq.id} value={eq.id}>
+                      {eq.nombre} {eq.placa ? `[Placa: ${eq.placa}]` : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+          </div>
+
+          {/* Selector Rápido de Camiones Registrados (Chips) */}
+          {equipos.length > 0 && (
             <div className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
-              <label className="block text-slate-400 text-[11px] font-medium mb-1.5">
-                Seleccionar Camión / Vehículo Registrado:
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {equipos
-                  .filter((e) => e.tipo === 'camion_volteo' || e.capacidadM3)
-                  .map((eq) => (
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-slate-400 text-[11px] font-medium">
+                  Acceso Rápido por Unidad:
+                </label>
+                <span className="text-[10px] text-slate-500">
+                  {equipos.length} {equipos.length === 1 ? 'unidad disponible' : 'unidades disponibles'}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
+                {equipos.map((eq) => {
+                  const isSelected =
+                    Boolean(placaCamion) &&
+                    Boolean(eq.placa) &&
+                    placaCamion.trim().toUpperCase() === eq.placa.trim().toUpperCase();
+
+                  return (
                     <button
                       key={eq.id}
                       type="button"
-                      onClick={() => {
-                        setPlacaCamion(eq.placa || '');
-                        if (eq.capacidadM3 && (!capacidadCamionM3 || capacidadCamionM3 === 0)) {
-                          setCapacidadCamionM3(eq.capacidadM3);
-                        }
-                        const emp = empleados.find(
-                          (em) => em.placaAsignada === eq.placa || em.vehiculoAsignado === eq.nombre
-                        );
-                        if (emp && !choferNombre) setChoferNombre(emp.nombre);
-                      }}
-                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                      onClick={() => handleSeleccionarCamion(eq.id)}
+                      className={`px-2.5 py-1 rounded-lg text-xs flex items-center gap-1.5 transition-colors cursor-pointer border ${
+                        isSelected
+                          ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold'
+                          : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'
+                      }`}
                     >
-                      <Truck className="w-3 h-3 text-sky-400" />
+                      <Truck className={`w-3 h-3 ${isSelected ? 'text-amber-400' : 'text-sky-400'}`} />
                       <span className="font-medium text-white">{eq.nombre}</span>
                       {eq.placa && <span className="font-mono text-amber-400 text-[10px]">[{eq.placa}]</span>}
-                      {eq.capacidadM3 && <span className="text-slate-400 text-[10px]">({eq.capacidadM3} m³)</span>}
+                      {eq.capacidadM3 ? (
+                        <span className="text-slate-400 text-[10px]">({eq.capacidadM3} m³)</span>
+                      ) : null}
                     </button>
-                  ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -392,7 +467,7 @@ export const ConduceFormMateriales: React.FC<ConduceFormMaterialesProps> = ({
                 onChange={(e) => {
                   const val = e.target.value.toUpperCase();
                   setPlacaCamion(val);
-                  const match = equipos.find((eq) => eq.placa.toUpperCase() === val);
+                  const match = equipos.find((eq) => eq.placa && eq.placa.toUpperCase() === val);
                   if (match?.capacidadM3 && (!capacidadCamionM3 || capacidadCamionM3 === 0)) {
                     setCapacidadCamionM3(match.capacidadM3);
                   }
